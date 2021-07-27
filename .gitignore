@@ -1,0 +1,16 @@
+# artifacts
+node_modules/
+out/
+tsconfig.tsbuildinfo
+
+# These files are for nix's direnv integrations
+.envrc
+.direnv
+
+# Data
+data.json
+ignore/
+
+# This file stores the last refresh token for the ramune user client
+.refresh
+

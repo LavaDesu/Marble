@@ -1,0 +1,8 @@
+# use flake
+
+export MARBLE_KEY=""
+export MARBLE_TOKEN=""
+export MARBLE_ID=""
+export MARBLE_SECRET=""
+export MARBLE_WEBHOOK_ID=""
+export MARBLE_WEBHOOK_TOKEN=""

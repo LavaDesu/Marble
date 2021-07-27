@@ -1,0 +1,28 @@
+{
+  "name": "marble",
+  "description": "osu bot for local league event",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "start": "tsnd --rs --respawn --transpile-only -- src/Marble.ts",
+    "start:dev": "tsnd --rs --inspect --respawn --transpile-only -- src/Marble.ts",
+    "watch": "tsnd --respawn --transpile-only src/Marble.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^16.0.0",
+    "@typescript-eslint/eslint-plugin": "^4.28.1",
+    "@typescript-eslint/parser": "^4.28.1",
+    "eslint": "^7.30.0",
+    "eslint-plugin-import": "^2.23.4",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "eris": "^0.15.1",
+    "ramune": "link:../Ramune",
+    "slash-create": "^3.3.0"
+  }
+}

@@ -44,10 +44,11 @@ export class LeagueManager {
 
         res = [...resCountry, ...resExt]
             .filter(score =>
-                (map.mods ?? []).every(mod =>
-                    // HACK: there might be a better way to do this
-                    score.mods.includes(mod === "NC" ? "DT" : mod)
-                )
+                (map.mods ?? []).every(mod => {
+                    if (score.mods.includes("NC") && mod === "DT")
+                        return true;
+                    return score.mods.includes(mod);
+                })
             )
             .sort((a, b) => b.score - a.score);
         this.scoreCache.set(map.map.id, res);

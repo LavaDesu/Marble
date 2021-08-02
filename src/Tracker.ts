@@ -106,9 +106,9 @@ export class Tracker extends EventEmitter {
             thumbnail: { url: `https://b.ppy.sh/thumb/${beatmapset.id}l.jpg` },
             color: 0x33EB35,
             description: [
-                `League: ${map.league.name}`,
-                `Week: ${map.week.number}`,
-                `Map ID: ${beatmap.id}`,
+                `League = ${map.league.name}`,
+                `Week = ${map.week.number}`,
+                `Map ID = ${beatmap.id}`,
                 `Required Mods = ${map.mods ? map.mods.join() : "None"}`
             ].join("\n"),
             fields: [

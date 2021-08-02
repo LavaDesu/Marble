@@ -15,6 +15,7 @@ import { CachedCollection } from "./Util/CachedCollection";
 import { LeagueManager } from "./Util/LeagueManager";
 
 const env = {
+    development: process.env.NODE_ENV === "development",
     botKey: process.env.MARBLE_KEY ?? "",
     botToken: process.env.MARBLE_TOKEN ?? "",
     osuID: process.env.MARBLE_ID ?? "",

@@ -79,9 +79,15 @@ export class Store {
             this.leagues.set(leagueName.toLowerCase(), league);
 
             await asyncForEach(rawLeague.players, async player => {
-                const discord = guild.members.get(player[0]);
-                const osu = await Marble.Instance.ramune.getUser(player[1]);
+                let discord: Member | undefined;
+                if (Marble.Environment.development) {
+                    console.log("[dev] discord user stub");
+                    discord = guild.members.random();
+                } else
+                    discord = guild.members.get(player[0]);
                 if (!discord) throw new Error("missing discord");
+
+                const osu = await Marble.Instance.ramune.getUser(player[1]);
                 if (!osu) throw new Error("missing osu");
                 const res: StorePlayer = { discord, league, osu };
                 league.players.set(osu.id, res);

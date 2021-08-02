@@ -195,7 +195,6 @@ export class MapCommand extends SlashCommand {
                 custom_id: "select_league",
                 min_values: 1,
                 max_values: 1,
-                /** @ts-ignore */
                 options: Store.Instance.getLeagues().map(mapLeague => ({
                     label: `${mapLeague.name} League`,
                     value: mapLeague.name,
@@ -211,7 +210,6 @@ export class MapCommand extends SlashCommand {
                 placeholder: "Select a week",
                 min_values: 1,
                 max_values: 1,
-                /** @ts-ignore */
                 options: league.weeks.map(mapWeek => ({
                     label: `Week ${mapWeek.number.toString()}`,
                     value: mapWeek.number.toString(),

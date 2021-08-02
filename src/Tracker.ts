@@ -100,22 +100,25 @@ export class Tracker extends EventEmitter {
 
         const embed: MessageEmbedOptions = {
             author: {
-                name: `${beatmapset.title} [${beatmap.version}]` + (score.mods.length ? " +" + score.mods.join("") : ""),
+                name: `${beatmapset.artist} - ${beatmapset.title} [${beatmap.version}]` + (score.mods.length ? " +" + score.mods.join("") : ""),
                 url: beatmap.url
             },
+            thumbnail: { url: `https://b.ppy.sh/thumb/${beatmapset.id}l.jpg` },
             color: 0x33EB35,
             description: [
                 `League: ${map.league.name}`,
                 `Week: ${map.week.number}`,
-                `Map ID: ${beatmap.id}`
+                `Map ID: ${beatmap.id}`,
+                `Required Mods = ${map.mods ? map.mods.join() : "None"}`
             ].join("\n"),
             fields: [
                 {
                     name: "Score Info",
                     value: [
-                        `Score: ${score.score.toLocaleString()}`,
-                        `Accuracy: ${Math.round(score.accuracy * 10000) / 100}%`,
-                        `Combo: ${score.max_combo}/${beatmap.max_combo!}x`,
+                        `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
+                        `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
+                        `Rank: ${Store.Instance.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
+                        `Combo: **${score.max_combo}**/${map.map.max_combo!}x`,
                         `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})`
                     ].join("\n")
                 },
@@ -123,7 +126,8 @@ export class Tracker extends EventEmitter {
                     name: "Ranking Changes",
                     value: "None (placeholder)"
                 }
-            ]
+            ],
+            timestamp: new Date(score.created_at)
         };
         await this.requestHandler.request({
             host: "discord.com",

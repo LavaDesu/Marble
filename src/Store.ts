@@ -2,13 +2,14 @@ import * as fs from "fs/promises";
 import type { Guild, Member } from "eris";
 import type { User as RamuneUser } from "ramune/lib/Responses/User";
 import type { Beatmap } from "ramune/lib/Responses/Beatmap";
-import type { Mod } from "ramune/lib/Enums";
+import type { Mod, ScoreRank } from "ramune/lib/Enums";
 import { asyncForEach } from "./Utils";
 import { Collection } from "./Util/Collection";
 import { Marble } from "./Marble";
 
 interface LeagueData {
     commandGuilds: string[];
+    rankEmotes: { [name in ScoreRank]: string };
     targetGuild: string;
     leagues: Record<string, League>;
 }
@@ -44,6 +45,7 @@ export class Store {
     public static Instance: Store;
 
     private commandGuilds: string[] = [];
+    private rankEmotes!: { [name in ScoreRank]: string };
 
     private readonly leagues: Collection<string, StoreLeague> = new Collection();
     private readonly maps: Collection<number, StoreMap> = new Collection();
@@ -62,6 +64,7 @@ export class Store {
         if (!guild) throw new Error("missing guild");
 
         this.commandGuilds = leagueData.commandGuilds;
+        this.rankEmotes = leagueData.rankEmotes;
         this.leagues.clear();
         this.maps.clear();
         this.players.clear();
@@ -133,6 +136,9 @@ export class Store {
     public getPlayerByDiscord(id: string) {
         return this.discordPlayers.get(id);
     }
+    public getRankEmote(rank: ScoreRank) {
+        return this.rankEmotes[rank];
+    }
     // public getWeek(number: number) {
     //     return this.weeks.get(number);
     // }
@@ -151,5 +157,8 @@ export class Store {
     // }
     public getCommandGuilds() {
         return this.commandGuilds;
+    }
+    public getRankEmotes() {
+        return this.rankEmotes;
     }
 }

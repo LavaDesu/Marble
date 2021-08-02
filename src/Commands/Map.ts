@@ -95,7 +95,7 @@ export class MapCommand extends SlashCommand {
             value: [
                 `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
                 `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
-                `Rank: ${ranks.get(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
+                `Rank: ${Store.Instance.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
                 `Combo: **${score.max_combo}**/${map.map.max_combo!}x`,
                 `Set <t:${(new Date(score.created_at).getTime() / 1000).toString()}:R>`,
                 `[View on osu](https://osu.ppy.sh/scores/osu/${score.id})`
@@ -274,14 +274,3 @@ export class MapCommand extends SlashCommand {
         return promise;
     }
 }
-
-const ranks: Collection<ScoreRank, string> = new Collection([
-    [ "A", "867931904077332540" ],
-    [ "D", "867931907986452551" ],
-    [ "C", "867931909685133323" ],
-    [ "B", "867931912579194911" ],
-    [ "S", "867931912579194914" ],
-    [ "SH", "867931915662020658" ],
-    [ "X", "867931918543515698" ],
-    [ "XH", "867931918753206293" ]
-].map(a => [a[0] as ScoreRank, `<:osu${a[0]}:${a[1]}>`]));

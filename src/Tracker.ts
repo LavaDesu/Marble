@@ -1,3 +1,4 @@
+import { writeFile } from "fs/promises";
 import { EventEmitter } from "events";
 import { Gamemode, RequestType, ScoreType } from "ramune/lib/Enums";
 import { Score } from "ramune/lib/Responses/Score";
@@ -27,12 +28,14 @@ export class Tracker extends EventEmitter {
     // Collection<PlayerID, Collection<MapID, Score>>
     private readonly scores: Collection<number, Collection<number, Score>>;
     private initialised: boolean;
+    private recording: boolean;
 
     constructor() {
         super();
         this.plays = new Collection();
         this.scores = new Collection();
         this.initialised = false;
+        this.recording = Marble.Environment.development;
     }
 
     async init() {
@@ -82,7 +85,8 @@ export class Tracker extends EventEmitter {
         if (previousScore && previousScore.score < score.score) return;
         console.log(`processing: ${score.id}`);
 
-        console.log(score);
+        if (this.recording)
+            await writeFile(`./ignore/score-${score.id}.json`, JSON.stringify(score, undefined, 4));
 
         scores.set(beatmap.id, score);
 
@@ -132,5 +136,9 @@ export class Tracker extends EventEmitter {
                 embeds: [embed]
             }
         });
+    }
+
+    public toggleRecord(): boolean {
+        return this.recording = !this.recording;
     }
 }

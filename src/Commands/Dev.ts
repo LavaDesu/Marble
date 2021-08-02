@@ -11,6 +11,11 @@ export class Dev extends SlashCommand {
             options: [
                 {
                     type: CommandOptionType.SUB_COMMAND,
+                    name: "record",
+                    description: "toggle recordings of new scores"
+                },
+                {
+                    type: CommandOptionType.SUB_COMMAND,
                     name: "replay",
                     description: "replay a score in tracker",
                     options: [{
@@ -63,6 +68,12 @@ export class Dev extends SlashCommand {
 
     async run(ctx: CommandContext) {
         await ctx.defer();
+
+        if (ctx.options.record) {
+            const isRecording = Marble.Instance.tracker.toggleRecord();
+            console.log("record", isRecording);
+            ctx.send(isRecording.toString());
+        }
 
         if (ctx.options.replay) {
             console.log("replay", ctx.options.replay.file);

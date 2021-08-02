@@ -16,6 +16,7 @@ import { LeagueManager } from "./Util/LeagueManager";
 
 const env = {
     development: process.env.NODE_ENV === "development",
+    botID: process.env.MARBLE_BOT ?? "",
     botKey: process.env.MARBLE_KEY ?? "",
     botToken: process.env.MARBLE_TOKEN ?? "",
     osuID: process.env.MARBLE_ID ?? "",
@@ -38,8 +39,7 @@ export class Marble extends Client {
     private refreshToken!: string;
 
     private readonly slashInstance = new SlashCreator({
-        // TODO: separate into env
-        applicationID: "401737128792293386",
+        applicationID: env.botID,
         publicKey: env.botKey,
         token: env.botToken
     });

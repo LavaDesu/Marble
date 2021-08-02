@@ -27,7 +27,6 @@ const env = {
 
 export class Marble extends Client {
     public static Instance: Marble;
-    public static readonly guilds = ["376642895093956608", "522838273299841054"];
     public static readonly Environment = env;
 
     public readonly componentQueue: Queue<CommandContext>;
@@ -100,7 +99,7 @@ export class Marble extends Client {
             .on("error", (e) => {
                 console.error("Unknown slash error", e);
             });
-        Marble.guilds.forEach(async g => await this.slashInstance.syncCommandsIn(g));
+        this.store.getCommandGuilds().forEach(async g => await this.slashInstance.syncCommandsIn(g));
 
         this.on("ready", async () => {
             console.log((new Date()).toISOString(), `Connected as ${this.user.username}#${this.user.discriminator} (${this.user.id})`);

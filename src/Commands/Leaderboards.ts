@@ -20,7 +20,7 @@ export class Leaderboards extends SlashCommand {
                 }
             ],
             defaultPermission: true,
-            guildIDs: Marble.guilds
+            guildIDs: Store.Instance.getCommandGuilds()
             // permissions: {
             //     "376642895093956608": [{
             //         type: ApplicationCommandPermissionType.USER,

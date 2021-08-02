@@ -8,6 +8,7 @@ import { Collection } from "./Util/Collection";
 import { Marble } from "./Marble";
 
 interface LeagueData {
+    commandGuilds: string[];
     targetGuild: string;
     leagues: Record<string, League>;
 }
@@ -42,6 +43,8 @@ export interface StoreMap {
 export class Store {
     public static Instance: Store;
 
+    private commandGuilds: string[] = [];
+
     private readonly leagues: Collection<string, StoreLeague> = new Collection();
     private readonly maps: Collection<number, StoreMap> = new Collection();
     private readonly players: Collection<number, StorePlayer> = new Collection();
@@ -58,6 +61,7 @@ export class Store {
         const guild = Marble.Instance.guilds.get(leagueData.targetGuild);
         if (!guild) throw new Error("missing guild");
 
+        this.commandGuilds = leagueData.commandGuilds;
         this.leagues.clear();
         this.maps.clear();
         this.players.clear();
@@ -139,4 +143,7 @@ export class Store {
     // public getWeeks() {
     //     return this.weeks;
     // }
+    public getCommandGuilds() {
+        return this.commandGuilds;
+    }
 }

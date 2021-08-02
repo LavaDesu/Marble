@@ -1,5 +1,5 @@
 import { ApplicationCommandPermissionType, CommandContext, SlashCommand, SlashCreator } from "slash-create";
-import { Marble } from "../Marble";
+import { Store } from "../Store";
 
 export class Ping extends SlashCommand {
     constructor(creator: SlashCreator) {
@@ -7,7 +7,7 @@ export class Ping extends SlashCommand {
             name: "ping",
             description: "classic ping pong test thingy",
             defaultPermission: true,
-            guildIDs: Marble.guilds
+            guildIDs: Store.Instance.getCommandGuilds()
             // permissions: {
             //     "376642895093956608": [
             //         {

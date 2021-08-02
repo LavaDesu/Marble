@@ -40,7 +40,6 @@ export interface StoreMap {
 }
 
 export class Store {
-    private targetGuild!: Guild;
     private readonly leagues: Collection<string, StoreLeague> = new Collection();
     private readonly maps: Collection<number, StoreMap> = new Collection();
     private readonly players: Collection<number, StorePlayer> = new Collection();
@@ -52,7 +51,6 @@ export class Store {
         const leagueData: LeagueData = JSON.parse(raw);
         const guild = Marble.Instance.guilds.get(leagueData.targetGuild);
         if (!guild) throw new Error("missing guild");
-        this.targetGuild = guild;
 
         this.leagues.clear();
         this.maps.clear();

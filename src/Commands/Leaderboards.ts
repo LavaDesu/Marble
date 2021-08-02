@@ -1,6 +1,6 @@
 import { AnyComponentButton, ApplicationCommandPermissionType, ButtonStyle, CommandContext, CommandOptionType, ComponentActionRow, ComponentType, SlashCommand, SlashCreator } from "slash-create";
 import { Marble } from "../Marble";
-import { StoreMap } from "../Store";
+import { Store } from "../Store";
 import { Collection } from "../Util/Collection";
 import { sanitiseDiscord } from "../Utils";
 
@@ -16,7 +16,7 @@ export class Leaderboards extends SlashCommand {
                     required: true,
                     type: CommandOptionType.STRING,
                     // XXX: Needs reload
-                    choices: Marble.Instance.store.getLeagues().keysAsArray().map(name => ({ name, value: name }))
+                    choices: Store.Instance.getLeagues().keysAsArray().map(name => ({ name, value: name }))
                 }
             ],
             defaultPermission: true,
@@ -44,13 +44,13 @@ export class Leaderboards extends SlashCommand {
     }
 
     private async exec(ctx: CommandContext) {
-        const league = Marble.Instance.store.getLeague(ctx.options.league);
+        const league = Store.Instance.getLeague(ctx.options.league);
         if (!league) {
             await ctx.editOriginal("Unknown league");
             return;
         }
         const manager = Marble.Instance.leagueManager;
-        const sender = Marble.Instance.store.getPlayerByDiscord(ctx.user.id);
+        const sender = Store.Instance.getPlayerByDiscord(ctx.user.id);
 
         let isCached = false;
         let timestamp: Date = new Date();

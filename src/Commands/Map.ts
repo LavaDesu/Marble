@@ -13,7 +13,7 @@ import {
     SlashCreator
 } from "slash-create";
 import { Marble } from "../Marble";
-import { StoreMap, StoreWeek } from "../Store";
+import { Store, StoreMap, StoreWeek } from "../Store";
 import { ScoreRank } from "../../../Ramune/lib/Enums";
 import { Collection } from "../Util/Collection";
 
@@ -61,7 +61,7 @@ export class MapCommand extends SlashCommand {
         Marble.Instance.componentQueue.add(ctx);
 
         const map = ctx.options.id
-            ? Marble.Instance.store.getMap(ctx.options.id)
+            ? Store.Instance.getMap(ctx.options.id)
             : await this.prompt(ctx);
         if (!map) {
             const msg: MessageOptions = {
@@ -183,8 +183,8 @@ export class MapCommand extends SlashCommand {
         const promise: Promise<StoreMap> = new Promise(r => resolve = r);
 
         // XXX: hardcoded Upper default
-        const player = Marble.Instance.store.getPlayerByDiscord(ctx.user.id);
-        let league = player ? player.league : Marble.Instance.store.getLeague("Upper")!;
+        const player = Store.Instance.getPlayerByDiscord(ctx.user.id);
+        let league = player ? player.league : Store.Instance.getLeague("Upper")!;
         let week: StoreWeek;
         let map: StoreMap;
 
@@ -196,7 +196,7 @@ export class MapCommand extends SlashCommand {
                 min_values: 1,
                 max_values: 1,
                 /** @ts-ignore */
-                options: Marble.Instance.store.getLeagues().map(mapLeague => ({
+                options: Store.Instance.getLeagues().map(mapLeague => ({
                     label: `${mapLeague.name} League`,
                     value: mapLeague.name,
                     default: league === mapLeague
@@ -244,7 +244,7 @@ export class MapCommand extends SlashCommand {
         });
 
         ctx.registerComponent("select_league", async selectCtx => {
-            league = Marble.Instance.store.getLeague(selectCtx.values.join(""))!;
+            league = Store.Instance.getLeague(selectCtx.values.join(""))!;
             await selectCtx.editParent({
                 embeds: [{
                     description: `League = ${league.name}`

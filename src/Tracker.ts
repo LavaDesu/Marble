@@ -7,7 +7,7 @@ import { Beatmap } from "ramune/lib/Responses/Beatmap";
 import { MessageEmbedOptions } from "slash-create";
 import { Marble } from "./Marble";
 import { Collection } from "./Util/Collection";
-import { StoreMap } from "./Store";
+import { Store, StoreMap } from "./Store";
 
 export interface TrackerEvents<T> {
     (event: "newScore", listener: (score: Score) => void): T;
@@ -49,7 +49,7 @@ export class Tracker extends EventEmitter {
     private async refresh() {
         const queue: Score[] = [];
 
-        await Promise.all(Marble.Instance.store.getPlayers().map(async player => {
+        await Promise.all(Store.Instance.getPlayers().map(async player => {
             let res: Score[];
             try {
                 res = await Marble.Instance.ramune.getUserScores(player.osu.id.toString(), ScoreType.Recent, Gamemode.Osu);
@@ -72,7 +72,7 @@ export class Tracker extends EventEmitter {
         this.emit("newScore", score);
         console.log(`new: ${score.id}`);
 
-        const map = Marble.Instance.store.getMap(score.beatmap!.id);
+        const map = Store.Instance.getMap(score.beatmap!.id);
         if (!map) return;
         console.log(`mapped: ${score.id}`);
         const beatmap = map.map;

@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import { ApplicationCommandPermissionType, CommandContext, CommandOptionType, SlashCommand, SlashCreator } from "slash-create";
 import { Marble } from "../Marble";
+import { Store } from "../Store";
 import { MapCommand } from "./Map";
 
 export class Dev extends SlashCommand {
@@ -53,6 +54,7 @@ export class Dev extends SlashCommand {
                 }
             ],
             defaultPermission: false,
+            // TODO: these are hardcoded
             guildIDs: "376642895093956608",
             permissions: {
                 "376642895093956608": [
@@ -91,7 +93,7 @@ export class Dev extends SlashCommand {
         if (ctx.options.reload) {
             console.log("reload");
             try {
-                await Marble.Instance.store.reload();
+                await Store.Instance.reload();
                 await ctx.send("a ok");
             } catch(e) {
                 console.error(e);
@@ -103,7 +105,7 @@ export class Dev extends SlashCommand {
             await ctx.send("brrr");
 
             const manager = Marble.Instance.leagueManager;
-            const maps = (await Marble.Instance.store.getLeagues().asyncMap(async league =>
+            const maps = (await Store.Instance.getLeagues().asyncMap(async league =>
                 await league.weeks.asyncMap(async week =>
                     await week.maps.asyncMap(async weekMap => {
                         await manager.getScores(weekMap);

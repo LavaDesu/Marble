@@ -40,11 +40,17 @@ export interface StoreMap {
 }
 
 export class Store {
+    public static Instance: Store;
+
     private readonly leagues: Collection<string, StoreLeague> = new Collection();
     private readonly maps: Collection<number, StoreMap> = new Collection();
     private readonly players: Collection<number, StorePlayer> = new Collection();
     private readonly discordPlayers: Collection<string, StorePlayer> = new Collection();
     // private readonly weeks: Collection<number, StoreWeek> = new Collection();
+
+    constructor() {
+        Store.Instance = this;
+    }
 
     public async reload(): Promise<void> {
         const raw = await fs.readFile("./data.json", "utf8");

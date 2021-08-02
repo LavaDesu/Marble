@@ -123,8 +123,18 @@ Marble.Instance.init();
     process.on(signal, async () => {
         console.log("Exiting via", signal);
         Marble.Instance.editStatus("offline");
-        Marble.Instance.disconnect({ reconnect: false });
         await Marble.Instance.componentQueue.clear();
+        // HACK: grace period for status edit to work
+        await new Promise(r => setTimeout(r, 1e3));
+
+        Marble.Instance.once("disconnect", () => {
+            console.log("Disconnected. Goodbye!");
+            process.exit();
+        });
+        Marble.Instance.disconnect({ reconnect: false });
+
+        await new Promise(r => setTimeout(r, 5e3));
+        console.log("Forced exit after timeout (5 seconds)");
         process.exit();
     })
 );

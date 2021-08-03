@@ -80,7 +80,7 @@ export class Tracker extends EventEmitter {
         console.log(`Processing: ${score.id} - ${score.best_id}`);
 
         if (this.recording)
-            await writeFile(`./ignore/score-${score.id}.json`, JSON.stringify(score, undefined, 4));
+            await writeFile(`./scores/${score.id}.json`, JSON.stringify(score, undefined, 4));
 
         scores.set(beatmap.id, score);
 

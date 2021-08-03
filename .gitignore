@@ -10,6 +10,7 @@ tsconfig.tsbuildinfo
 # Data
 data.json
 ignore/
+scores/
 
 # This file stores the last refresh token for the ramune user client
 .refresh

@@ -68,13 +68,19 @@ module.exports = {
                 "format": ["PascalCase", "UPPER_CASE"]
             },
             {
+                "selector": "parameter",
+                "modifiers": ["unused"],
+                "filter": "^_",
+                "format": null
+            },
+            {
                 "selector": "property",
                 "format": null
             }
         ],
         "@typescript-eslint/no-for-in-array": "error",
         "@typescript-eslint/no-shadow": ["error", { "hoist": "all" }],
-        "@typescript-eslint/no-unused-vars": "warn",
+        "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
         "@typescript-eslint/no-unnecessary-boolean-literal-compare": "warn",
         "@typescript-eslint/no-var-requires": "error",
         "@typescript-eslint/prefer-as-const": "warn",

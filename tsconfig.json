@@ -10,6 +10,7 @@
         "noImplicitReturns": true,
         "outDir": "./out",
         "rootDir": "./src",
+        "skipLibCheck": true,
         "sourceMap": true,
         "strict": true,
         "tsBuildInfoFile": "./out/marble.tsbuildinfo"

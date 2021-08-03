@@ -1,4 +1,4 @@
-export async function asyncMap<T>(array: T[], cb: (value: T, index: number, arr: T[]) => Promise<T>): Promise<T[]> {
+export async function asyncMap<T, R>(array: T[], cb: (value: T, index: number, arr: T[]) => Promise<R>): Promise<R[]> {
     return await Promise.all(array.map(cb));
 }
 export async function asyncForEach<T>(array: T[], cb: (value: T, index: number, arr: T[]) => Promise<any>): Promise<void> {

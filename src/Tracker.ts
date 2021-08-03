@@ -32,7 +32,7 @@ export class Tracker extends EventEmitter {
         this.plays = new Collection();
         this.scores = new Collection();
         this.initialised = false;
-        this.recording = Marble.Environment.development;
+        this.recording = true;
     }
 
     async init() {

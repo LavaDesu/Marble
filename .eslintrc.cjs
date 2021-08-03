@@ -74,6 +74,7 @@ module.exports = {
         ],
         "@typescript-eslint/no-for-in-array": "error",
         "@typescript-eslint/no-shadow": ["error", { "hoist": "all" }],
+        "@typescript-eslint/no-unused-vars": "warn",
         "@typescript-eslint/no-unnecessary-boolean-literal-compare": "warn",
         "@typescript-eslint/no-var-requires": "error",
         "@typescript-eslint/prefer-as-const": "warn",

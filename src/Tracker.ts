@@ -16,7 +16,13 @@ export interface Tracker {
 export class Tracker extends EventEmitter {
     private trackTimer?: NodeJS.Timer;
     private readonly plays: Collection<number, number[]>;
-    private readonly requestHandler = new RequestHandler();
+    private readonly requestHandler = new RequestHandler({
+        defaultHost: "discord.com",
+        rateLimit: {
+            limit: 5,
+            interval: 5e3
+        }
+    });
     private readonly webhook = {
         id: Marble.Environment.webhookID,
         token: Marble.Environment.webhookToken
@@ -124,7 +130,6 @@ export class Tracker extends EventEmitter {
             timestamp: new Date(score.created_at)
         };
         await this.requestHandler.request({
-            host: "discord.com",
             discardOutput: true,
             endpoint: `/api/webhooks/${this.webhook.id}/${this.webhook.token}`,
             type: RequestType.POST,

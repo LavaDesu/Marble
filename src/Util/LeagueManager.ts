@@ -1,5 +1,4 @@
-import { Score } from "ramune/lib/Responses/Score";
-import { BeatmapLeaderboardScope } from "ramune/lib/Enums";
+import { BeatmapLeaderboardScope, Score } from "ramune";
 import { Marble } from "../Marble";
 import { StoreMap } from "../Store";
 import { CachedCollection } from "./CachedCollection";

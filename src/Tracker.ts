@@ -1,8 +1,6 @@
 import { writeFile } from "fs/promises";
 import { EventEmitter } from "events";
-import { Gamemode, RequestType, ScoreType } from "ramune/lib/Enums";
-import { Score } from "ramune/lib/Responses/Score";
-import { RequestHandler } from "ramune/lib/RequestHandler";
+import { Gamemode, RequestHandler, RequestType, Score, ScoreType } from "ramune";
 import { MessageEmbedOptions } from "slash-create";
 import { Marble } from "./Marble";
 import { Collection } from "./Util/Collection";

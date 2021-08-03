@@ -9,8 +9,9 @@
         "noImplicitAny": true,
         "noImplicitReturns": true,
         "outDir": "./out",
-        "rootDir": ".",
+        "rootDir": "./src",
         "sourceMap": true,
-        "strict": true
+        "strict": true,
+        "tsBuildInfoFile": "./out/marble.tsbuildinfo"
     }
 }

@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "eris": "^0.15.1",
-    "ramune": "LavaDesu/Ramune",
+    "ramune": "github:LavaDesu/Ramune",
     "slash-create": "^3.4.1"
   }
 }

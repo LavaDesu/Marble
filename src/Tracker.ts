@@ -67,20 +67,17 @@ export class Tracker extends EventEmitter {
 
     public async process(score: Score) {
         this.emit("newScore", score);
-        console.log(`new: ${score.id}`);
 
         const map = Store.Instance.getMap(score.beatmap!.id);
         if (!map) return;
-        console.log(`mapped: ${score.id}`);
         const beatmap = map.map;
 
         if (!score.best_id) return;
-        console.log(`new best: ${score.id} -> ${score.best_id}`);
 
         const scores = this.scores.getOrSet(score.user!.id, new Collection());
         const previousScore = scores.get(beatmap.id);
         if (previousScore && previousScore.score < score.score) return;
-        console.log(`processing: ${score.id}`);
+        console.log(`Processing: ${score.id} - ${score.best_id}`);
 
         if (this.recording)
             await writeFile(`./ignore/score-${score.id}.json`, JSON.stringify(score, undefined, 4));

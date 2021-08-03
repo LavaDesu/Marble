@@ -8,7 +8,7 @@ export class Collection<K, V> extends Map<K, V> {
         this.limit = limit ?? 0;
     }
 
-    random(): { key: K, value: V } | null {
+    random(): { key: K; value: V } | null {
         if (!this.size)
             return null;
 

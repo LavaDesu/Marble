@@ -1,5 +1,5 @@
 import * as fs from "fs/promises";
-import type { Guild, Member } from "eris";
+import type { Member } from "eris";
 import type { User as RamuneUser } from "ramune/lib/Responses/User";
 import type { Beatmap } from "ramune/lib/Responses/Beatmap";
 import type { Mod, ScoreRank } from "ramune/lib/Enums";

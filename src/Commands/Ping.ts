@@ -1,4 +1,8 @@
-import { ApplicationCommandPermissionType, CommandContext, SlashCommand, SlashCreator } from "slash-create";
+import {
+    CommandContext,
+    SlashCommand,
+    SlashCreator
+} from "slash-create";
 import { Store } from "../Store";
 
 export class Ping extends SlashCommand {

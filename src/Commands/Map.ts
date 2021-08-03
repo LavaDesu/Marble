@@ -1,6 +1,5 @@
 import {
     AnyComponentButton,
-    ApplicationCommandPermissionType,
     ButtonStyle,
     CommandContext,
     CommandOptionType,
@@ -14,8 +13,6 @@ import {
 } from "slash-create";
 import { Marble } from "../Marble";
 import { Store, StoreMap, StoreWeek } from "../Store";
-import { ScoreRank } from "../../../Ramune/lib/Enums";
-import { Collection } from "../Util/Collection";
 
 export class MapCommand extends SlashCommand {
     public static Instance: MapCommand;

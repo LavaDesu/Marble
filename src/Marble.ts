@@ -1,7 +1,6 @@
 import * as fs from "fs/promises";
 import { Client, ClientOptions } from "eris";
 import { Ramune, UserClient } from "ramune";
-import { Score } from "ramune/lib/Responses/Score";
 import { CommandContext, GatewayServer, MessageOptions, SlashCreator } from "slash-create";
 
 import { Dev } from "./Commands/Dev";
@@ -11,7 +10,6 @@ import { Ping } from "./Commands/Ping";
 import { Queue } from "./Util/Queue";
 import { Store } from "./Store";
 import { Tracker } from "./Tracker";
-import { CachedCollection } from "./Util/CachedCollection";
 import { LeagueManager } from "./Util/LeagueManager";
 
 const env = {

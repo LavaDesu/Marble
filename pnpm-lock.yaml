@@ -14,7 +14,7 @@ specifiers:
 
 dependencies:
   eris: 0.15.1
-  ramune: github.com/LavaDesu/Ramune/b3645b7d9dc9307e87c54a1309afcdcae94b95ce
+  ramune: github.com/LavaDesu/Ramune/d2b6b1902a4daa775ed31281edc2b5717ad593fe
   slash-create: 3.4.1
 
 devDependencies:
@@ -1801,8 +1801,8 @@ packages:
     engines: {node: '>=6'}
     dev: true
 
-  github.com/LavaDesu/Ramune/b3645b7d9dc9307e87c54a1309afcdcae94b95ce:
-    resolution: {tarball: https://codeload.github.com/LavaDesu/Ramune/tar.gz/b3645b7d9dc9307e87c54a1309afcdcae94b95ce}
+  github.com/LavaDesu/Ramune/d2b6b1902a4daa775ed31281edc2b5717ad593fe:
+    resolution: {tarball: https://codeload.github.com/LavaDesu/Ramune/tar.gz/d2b6b1902a4daa775ed31281edc2b5717ad593fe}
     name: ramune
     version: 0.1.0
     engines: {node: '>=10.0.0'}

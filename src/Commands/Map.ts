@@ -95,7 +95,7 @@ export class MapCommand extends SlashCommand {
                     `Rank: ${Store.Instance.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
                     `Combo: **${score.max_combo}**/${map.map.max_combo!}x`,
                     `Set <t:${(new Date(score.created_at).getTime() / 1000).toString()}:R>`,
-                    `[View on osu](https://osu.ppy.sh/scores/osu/${score.id})`
+                    score.best_id ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})` : undefined
                 ].filter(s => s !== undefined).join("\n")
             }));
 

@@ -71,13 +71,6 @@ export class Marble extends Client {
                         handler(event.d as any);
                 });
             }))
-            .registerCommands([
-                new Ping(this.slashInstance),
-                new Dev(this.slashInstance),
-                new Leaderboards(this.slashInstance),
-                new MapCommand(this.slashInstance)
-            ])
-            .syncCommands()
             .on("commandBlock", (cmd, _, reason, data) => {
                 console.error("Command blocked", cmd.commandName, reason, data);
             })
@@ -97,13 +90,20 @@ export class Marble extends Client {
             .on("error", (e) => {
                 console.error("Unknown slash error", e);
             });
-        this.store.getCommandGuilds().forEach(async g => await this.slashInstance.syncCommandsIn(g));
 
         this.on("ready", async () => {
             console.log((new Date()).toISOString(), `Connected as ${this.user.username}#${this.user.discriminator} (${this.user.id})`);
             this.editStatus("online");
             await this.store.reload();
             await this.tracker.init();
+
+            this.slashInstance.registerCommands([
+                new Ping(this.slashInstance),
+                new Dev(this.slashInstance),
+                new Leaderboards(this.slashInstance),
+                new MapCommand(this.slashInstance)
+            ]).syncCommands();
+            this.store.getCommandGuilds().forEach(async g => await this.slashInstance.syncCommandsIn(g));
         });
 
         this.ramune = await Ramune.create(env.osuID, env.osuSecret);

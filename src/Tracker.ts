@@ -173,7 +173,7 @@ export class Tracker extends EventEmitter {
         // Check 2: Is this score higher than the previous score?
         const scores = this.scores.getOrSet(score.beatmap!.id, new Collection());
         const previousScore = scores.get(score.user_id);
-        if (previousScore && previousScore.score < score.score) return;
+        if (previousScore && previousScore.score > score.score) return;
 
         scores.set(score.user_id, score);
 

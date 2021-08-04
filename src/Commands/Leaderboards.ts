@@ -20,7 +20,7 @@ export class Leaderboards extends SlashCommand {
             options: [
                 {
                     name: "league",
-                    description: 'League to get leaderboards for; either "Upper" or "Lower"',
+                    description: "League to get leaderboards for",
                     required: true,
                     type: CommandOptionType.STRING,
                     // XXX: Needs reload

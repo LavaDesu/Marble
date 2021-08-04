@@ -77,7 +77,7 @@ export class Store {
                 players: new Collection(),
                 weeks: new Collection()
             };
-            this.leagues.set(leagueName.toLowerCase(), league);
+            this.leagues.set(leagueName, league);
 
             await asyncForEach(rawLeague.players, async player => {
                 let discord: Member | undefined;
@@ -123,7 +123,7 @@ export class Store {
     }
 
     public getLeague(name: string) {
-        return this.leagues.get(name.toLowerCase());
+        return this.leagues.get(name);
     }
     public getMap(id: number) {
         return this.maps.get(id);

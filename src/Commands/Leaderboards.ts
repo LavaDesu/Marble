@@ -65,6 +65,7 @@ export class Leaderboards extends SlashCommand {
         maps.forEach(map => {
             map.valuesAsArray()
                 .filter(score => league.players.has(score.user!.id))
+                .sort((a, b) => b.score - a.score)
                 .slice(0, 3)
                 .forEach((score, index) => {
                     let name = sanitiseDiscord(score.user!.username);

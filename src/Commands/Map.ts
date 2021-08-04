@@ -84,19 +84,20 @@ export class MapCommand extends SlashCommand {
 
         const scores = Marble.Instance.tracker.getMapScores(map.map.id)?.valuesAsArray() ?? [];
 
-        const fields: EmbedField[] = scores.filter(score =>
-            map.league.players.has(score.user!.id)
-        ).map((score, rank) => ({
-            name: `#${rank + 1} - **${score.user!.username}**`,
-            value: [
-                `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
-                `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
-                `Rank: ${Store.Instance.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
-                `Combo: **${score.max_combo}**/${map.map.max_combo!}x`,
-                `Set <t:${(new Date(score.created_at).getTime() / 1000).toString()}:R>`,
-                `[View on osu](https://osu.ppy.sh/scores/osu/${score.id})`
-            ].filter(s => s !== undefined).join("\n")
-        }));
+        const fields: EmbedField[] = scores
+            .filter(score => map.league.players.has(score.user!.id))
+            .sort((a, b) => b.score - a.score)
+            .map((score, rank) => ({
+                name: `#${rank + 1} - **${score.user!.username}**`,
+                value: [
+                    `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
+                    `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
+                    `Rank: ${Store.Instance.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
+                    `Combo: **${score.max_combo}**/${map.map.max_combo!}x`,
+                    `Set <t:${(new Date(score.created_at).getTime() / 1000).toString()}:R>`,
+                    `[View on osu](https://osu.ppy.sh/scores/osu/${score.id})`
+                ].filter(s => s !== undefined).join("\n")
+            }));
 
         const embed: MessageEmbedOptions = {
             title: `${map.map.beatmapset!.artist} - ${map.map.beatmapset!.title} [${map.map.version}]`,

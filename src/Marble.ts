@@ -10,7 +10,6 @@ import { Ping } from "./Commands/Ping";
 import { Queue } from "./Util/Queue";
 import { Store } from "./Store";
 import { Tracker } from "./Tracker";
-import { LeagueManager } from "./Util/LeagueManager";
 
 const env = {
     development: process.env.NODE_ENV === "development",
@@ -29,7 +28,6 @@ export class Marble extends Client {
     public static readonly Environment = env;
 
     public readonly componentQueue: Queue<CommandContext>;
-    public readonly leagueManager: LeagueManager;
     public readonly store: Store;
     public readonly tracker: Tracker;
     public ramune!: Ramune;
@@ -58,7 +56,6 @@ export class Marble extends Client {
                 ctx.editOriginal({ allowedMentions: { everyone: false }, components: [] });
             } catch(e) {}
         }, 600e3);
-        this.leagueManager = new LeagueManager();
         this.store = new Store();
         this.tracker = new Tracker();
     }

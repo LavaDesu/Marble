@@ -82,10 +82,9 @@ export class MapCommand extends SlashCommand {
         const mapID = map.map.id;
         const mods = map.week.mods.get(mapID);
 
-        const manager = Marble.Instance.leagueManager;
-        const res = await manager.getScores(map);
+        const scores = Marble.Instance.tracker.getMapScores(map.map.id)?.valuesAsArray() ?? [];
 
-        const fields: EmbedField[] = res.scores.filter(score =>
+        const fields: EmbedField[] = scores.filter(score =>
             map.league.players.has(score.user!.id)
         ).map((score, rank) => ({
             name: `#${rank + 1} - **${score.user!.username}**`,
@@ -109,40 +108,19 @@ export class MapCommand extends SlashCommand {
                 `Map ID = ${map.map.id}`,
                 `Required Mods = ${mods ? mods.join() : "None"}`
             ].join("\n"),
-            fields: fields.slice(0, 3),
-            footer: res.cached ? { text: "This result is cached" } : undefined,
-            timestamp: manager.scoreCache.getSetTime(mapID)
+            fields: fields.slice(0, 3)
         };
 
         let isFull = false;
-        const showAllComponent = (): AnyComponentButton => ({
-            type: ComponentType.BUTTON,
-            style: ButtonStyle.PRIMARY,
-            label: isFull ? "Show only top 3 scores" : "Show all scores",
-            custom_id: "show_all"
+        const showAllComponent = (): ComponentActionRow => ({
+            type: ComponentType.ACTION_ROW,
+            components: [{
+                type: ComponentType.BUTTON,
+                style: ButtonStyle.PRIMARY,
+                label: isFull ? "Show only top 3 scores" : "Show all scores",
+                custom_id: "show_all"
+            }]
         });
-        const forceComponent = (): AnyComponentButton => ({
-            type: ComponentType.BUTTON,
-            style: ButtonStyle.PRIMARY,
-            label: "Force refresh",
-            custom_id: "force_refresh"
-        });
-
-        const utilComponents = (): ComponentActionRow[] => {
-            const buttons: AnyComponentButton[] = [];
-            if (fields.length >= 4)
-                buttons.push(showAllComponent());
-            if (res.cached)
-                buttons.push(forceComponent());
-
-            if (buttons.length)
-                return [{
-                    type: ComponentType.ACTION_ROW,
-                    components: buttons
-                }];
-            else
-                return [];
-        };
 
         if (debug) {
             await ctx.send({
@@ -153,7 +131,7 @@ export class MapCommand extends SlashCommand {
 
         await ctx.editOriginal({
             embeds: [embed],
-            components: utilComponents()
+            components: fields.length > 3 ? [showAllComponent()] : []
         });
 
         ctx.registerComponent("show_all", async btnCtx => {
@@ -165,13 +143,8 @@ export class MapCommand extends SlashCommand {
 
             await btnCtx.editParent({
                 embeds: [embed],
-                components: utilComponents()
+                components: fields.length > 3 ? [showAllComponent()] : []
             });
-        });
-
-        ctx.registerComponent("force_refresh", async () => {
-            manager.scoreCache.delete(mapID);
-            await this.exec(ctx, map);
         });
     }
 

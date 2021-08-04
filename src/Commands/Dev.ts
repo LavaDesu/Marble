@@ -104,15 +104,9 @@ export class Dev extends SlashCommand {
         if (ctx.options.dump) {
             await ctx.send("brrr");
 
-            const manager = Marble.Instance.leagueManager;
-            const maps = (await Store.Instance.getLeagues().asyncMap(async league =>
-                await league.weeks.asyncMap(async week =>
-                    await week.maps.asyncMap(async weekMap => {
-                        await manager.getScores(weekMap);
-                        return weekMap;
-                    })
-                )
-            )).flat(2);
+            const maps = Store.Instance.getLeagues().map(league =>
+                league.weeks.map(week => week.maps.valuesAsArray())
+            ).flat(2);
             for (const m of maps)
                 await MapCommand.Instance.exec(ctx, m, true);
             return;

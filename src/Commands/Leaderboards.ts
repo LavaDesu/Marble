@@ -57,29 +57,13 @@ export class Leaderboards extends SlashCommand {
             await ctx.editOriginal("Unknown league");
             return;
         }
-        const manager = Marble.Instance.leagueManager;
         const sender = Store.Instance.getPlayerByDiscord(ctx.user.id);
 
-        let isCached = false;
-        let timestamp: Date = new Date();
-        // Pre-fetch everything
-        const maps = (await league.weeks.asyncMap(async week =>
-            await week.maps.asyncMap(async map => {
-                const scores = await manager.getScores(map);
-                if (scores.cached) {
-                    isCached = true;
-                    const time = manager.scoreCache.getSetTime(map.map.id);
-                    if (time && time.getTime() < timestamp.getTime())
-                        timestamp = time;
-                }
-
-                return { map, scores: scores.scores };
-            })
-        )).flat();
+        const maps = Marble.Instance.tracker.getScores();
 
         const points: Collection<string, number> = new Collection();
         maps.forEach(map => {
-            map.scores
+            map.valuesAsArray()
                 .filter(score => league.players.has(score.user!.id))
                 .slice(0, 3)
                 .forEach((score, index) => {
@@ -136,31 +120,11 @@ export class Leaderboards extends SlashCommand {
         //     .map(point => `${point.name} - ${point.points} points`)
         //     .join("\n");
 
-        const forceComponent = (): ComponentActionRow[] => [{
-            type: ComponentType.ACTION_ROW,
-            components: [{
-                type: ComponentType.BUTTON,
-                style: ButtonStyle.PRIMARY,
-                label: "Force refresh",
-                custom_id: "force_refresh"
-            }]
-        }];
-
         await ctx.editOriginal({
             embeds: [{
                 title: `Current Rankings - ${league.name} League`,
-                description: desc,
-                footer: isCached ? { text: "This result is cached" } : undefined,
-                timestamp
-            }],
-            components: isCached ? forceComponent() : []
-        });
-
-        ctx.registerComponent("force_refresh", async () => {
-            league.weeks.forEach(week => week.maps.forEach(map =>
-                manager.scoreCache.delete(map.map.id)
-            ));
-            await this.exec(ctx);
+                description: desc
+            }]
         });
     }
 }

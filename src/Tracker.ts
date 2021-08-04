@@ -1,10 +1,19 @@
-import { writeFile } from "fs/promises";
+import { readdir, readFile, writeFile } from "fs/promises";
+import { join as joinPaths } from "path";
 import { EventEmitter } from "events";
-import { Gamemode, RequestHandler, RequestType, Score, ScoreType } from "ramune";
+import {
+    BeatmapLeaderboardScope,
+    Gamemode,
+    RequestHandler,
+    RequestType,
+    Score,
+    ScoreType
+} from "ramune";
 import { MessageEmbedOptions } from "slash-create";
 import { Marble } from "./Marble";
 import { Collection } from "./Util/Collection";
 import { Store, StoreMap } from "./Store";
+import { asyncForEach, asyncMap } from "./Utils";
 
 export interface TrackerEvents<T> {
     (event: "newScore", listener: (score: Score) => void): T;
@@ -13,8 +22,13 @@ export interface Tracker {
     on: TrackerEvents<this>;
     once: TrackerEvents<this>;
 }
+// TODO: rename plays and scores
 export class Tracker extends EventEmitter {
     private trackTimer?: NodeJS.Timer;
+    /* This collection is used to track scores; it stores all recent plays of a user
+     * and used to detect new recent plays
+     * format: Collection<PlayerID, ScoreID>
+     */
     private readonly plays: Collection<number, number[]>;
     private readonly requestHandler = new RequestHandler({
         defaultHost: "discord.com",
@@ -28,7 +42,9 @@ export class Tracker extends EventEmitter {
         token: Marble.Environment.webhookToken
     };
 
-    // Collection<PlayerID, Collection<MapID, Score>>
+    /* This collection is used to track all of the user's top scores per map.
+     * format: Collection<MapID, Collection<PlayerID, Score>>
+     */
     private readonly scores: Collection<number, Collection<number, Score>>;
     private initialised: boolean;
     private recording: boolean;
@@ -46,13 +62,85 @@ export class Tracker extends EventEmitter {
             clearInterval(this.trackTimer);
 
         this.trackTimer = setInterval(this.refresh.bind(this), 300000);
-        return await this.refresh();
+        await this.syncScores();
+        await this.replayScores();
+        await this.refresh();
+        return;
+    }
+
+    public getScore(map: number, player: number) {
+        return this.scores.get(map)?.get(player);
+    }
+    public getMapScores(map: number) {
+        return this.scores.get(map);
+    }
+    public getScores() {
+        return this.scores;
+    }
+
+    public async replayScores() {
+        const scorePaths = await readdir("./scores");
+        const scores = await asyncMap(scorePaths, async scorePath =>
+            JSON.parse(await readFile(joinPaths("./scores", scorePath), "utf8")) as Score
+        );
+
+        /* we're not running this in parallel since we want later scores
+         * to override earlier ones, and this could introduce nasty race
+         * conditions
+         */
+        for (const score of scores)
+            await this.process(score, false, false);
+
+        return;
+    }
+
+    public async syncScores() {
+        await Store.Instance.getMaps().asyncMap(async map => {
+            if (!map.map.is_scoreable) return;
+
+            const resCountry = (await Marble.Instance.ramuneClient.getBeatmapScores(map.map.id.toString(), {
+                mode: "osu",
+                type: BeatmapLeaderboardScope.Country
+            })).scores;
+            const resExt = (await Promise.all(
+                map.league.players
+                    .valuesAsArray()
+                    .filter(p => p.osu.country_code !== "KH")
+                    .map(async p => {
+                        try {
+                            return (await Marble.Instance.ramune.getBeatmapUserScore(
+                                map.map.id.toString(),
+                                p.osu.id.toString(),
+                                {
+                                    mode: "osu",
+                                    type: BeatmapLeaderboardScope.Global
+                                }
+                            )).score;
+                        } catch (e) {
+                            return;
+                        }
+                    })
+            )).filter((i): i is Score => i !== undefined);
+
+            const res = [...resCountry, ...resExt]
+                .filter(score =>
+                    (map.mods ?? []).every(mod => {
+                        if (score.mods.includes("NC") && mod === "DT")
+                            return true;
+                        return score.mods.includes(mod);
+                    })
+                )
+                .sort((a, b) => b.score - a.score);
+
+            await asyncForEach(res, async score => await this.process(score, false));
+        });
+        return;
     }
 
     private async refresh() {
         const queue: Score[] = [];
 
-        await Promise.all(Store.Instance.getPlayers().map(async player => {
+        await Store.Instance.getPlayers().asyncMap(async player => {
             let res: Score[];
             try {
                 res = await Marble.Instance.ramune.getUserScores(player.osu.id.toString(), ScoreType.Recent, Gamemode.Osu);
@@ -63,34 +151,37 @@ export class Tracker extends EventEmitter {
             if (newScores.length)
                 queue.push(...newScores);
             this.plays.set(player.osu.id, res.map(i => i.id));
-        }));
+        });
 
         if (this.initialised)
-            await Promise.all(queue.map(this.process.bind(this)));
+            await Promise.all(queue.map(async score => await this.process(score)));
         else
             this.initialised = true;
     }
 
-    public async process(score: Score) {
+    public async process(score: Score, shouldPost: boolean = true, shouldStore: boolean = true) {
         this.emit("newScore", score);
 
-        const map = Store.Instance.getMap(score.beatmap!.id);
-        if (!map) return;
-        const beatmap = map.map;
-
-        if (!score.best_id) return;
-
-        const scores = this.scores.getOrSet(score.user!.id, new Collection());
-        const previousScore = scores.get(beatmap.id);
-        if (previousScore && previousScore.score < score.score) return;
-        console.log(`Processing: ${score.id} - ${score.best_id}`);
-
-        if (this.recording)
+        if (this.recording && shouldStore)
             await writeFile(`./scores/${score.id}.json`, JSON.stringify(score, undefined, 4));
 
-        scores.set(beatmap.id, score);
+        // Check 1: Does the map exist in the player's league?
+        const league = Store.Instance.getPlayer(score.user_id)?.league;
+        const map = Store.Instance.getMap(score.beatmap!.id);
+        if (!map || map.league !== league) return;
 
-        return await this.post(map, score);
+        // Check 2: Is this score higher than the previous score?
+        const scores = this.scores.getOrSet(score.beatmap!.id, new Collection());
+        const previousScore = scores.get(score.user_id);
+        if (previousScore && previousScore.score < score.score) return;
+
+        scores.set(score.user_id, score);
+
+        if (shouldPost) {
+            console.log(`Processing: ${score.id} - ${score.best_id}`);
+            this.post(map, score);
+        }
+        return;
     }
 
     private async post(map: StoreMap, score: Score) {
@@ -119,8 +210,8 @@ export class Tracker extends EventEmitter {
                         `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
                         `Rank: ${Store.Instance.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
                         `Combo: **${score.max_combo}**/${map.map.max_combo!}x`,
-                        `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})`
-                    ].join("\n")
+                        score.best_id ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})` : undefined
+                    ].filter(i => i !== undefined).join("\n")
                 },
                 {
                     name: "Ranking Changes",

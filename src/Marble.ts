@@ -33,7 +33,7 @@ export class Marble extends Client {
 
     public readonly commands: SlashCommand[] = [];
 
-    private readonly slashInstance = new SlashCreator({
+    public readonly slashInstance = new SlashCreator({
         applicationID: env.botID,
         publicKey: env.botKey,
         token: env.botToken
@@ -125,16 +125,19 @@ Marble.Instance.init();
 [ "SIGINT", "SIGTERM" ].map(signal =>
     process.on(signal, async () => {
         console.log("Exiting via", signal);
-        Marble.Instance.editStatus("offline");
-        await Marble.Instance.componentQueue.clear();
+
+        const marble = Marble.Instance;
+        marble.editStatus("offline");
+        marble.commands.forEach(cmd => marble.slashInstance.unregisterCommand(cmd));
+        await marble.componentQueue.clear();
         // HACK: grace period for status edit to work
         await new Promise(r => setTimeout(r, 1e3));
 
-        Marble.Instance.once("disconnect", () => {
+        marble.once("disconnect", () => {
             console.log("Disconnected. Goodbye!");
             process.exit();
         });
-        Marble.Instance.disconnect({ reconnect: false });
+        marble.disconnect({ reconnect: false });
 
         await new Promise(r => setTimeout(r, 5e3));
         console.log("Forced exit after timeout (5 seconds)");

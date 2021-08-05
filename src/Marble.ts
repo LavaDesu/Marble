@@ -106,7 +106,14 @@ export class Marble extends Client {
             ]).syncCommands();
         });
 
-        this.ramune = await Ramune.create(env.osuID, env.osuSecret);
+        this.ramune = await Ramune.create(env.osuID, env.osuSecret, {
+            requestHandler: {
+                rateLimit: {
+                    limit: 500,
+                    interval: 60e3
+                }
+            }
+        });
         this.refreshToken = (await fs.readFile("./.refresh", "utf8")).trim();
         this.ramuneClient = await this.ramune.createUserClient(this.refreshToken, "refresh");
         this.ramuneClient.on("tokenUpdate", async token =>

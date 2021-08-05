@@ -1,6 +1,6 @@
 import { Client, ClientOptions } from "eris";
 import { Ramune } from "ramune";
-import { CommandContext, GatewayServer, MessageOptions, SlashCreator } from "slash-create";
+import { CommandContext, GatewayServer, MessageOptions, SlashCommand, SlashCreator } from "slash-create";
 
 import { Dev } from "./Commands/Dev";
 import { Leaderboards } from "./Commands/Leaderboards";
@@ -30,6 +30,8 @@ export class Marble extends Client {
     public readonly store: Store;
     public readonly tracker: Tracker;
     public ramune!: Ramune;
+
+    public readonly commands: SlashCommand[] = [];
 
     private readonly slashInstance = new SlashCreator({
         applicationID: env.botID,
@@ -95,12 +97,14 @@ export class Marble extends Client {
             await this.store.reload();
             await this.tracker.init();
 
-            this.slashInstance.registerCommands([
+            this.commands.push(
                 new Ping(this.slashInstance),
                 new Dev(this.slashInstance),
                 new Leaderboards(this.slashInstance),
                 new MapCommand(this.slashInstance)
-            ]).syncCommands();
+            );
+
+            this.slashInstance.registerCommands(this.commands).syncCommands();
         });
 
         this.ramune = await Ramune.create(env.osuID, env.osuSecret, {

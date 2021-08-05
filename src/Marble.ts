@@ -126,6 +126,11 @@ Marble.Instance.init();
     process.on(signal, async () => {
         console.log("Exiting via", signal);
 
+        setTimeout(() => {
+            console.log("Forced exit after timeout (5 seconds)");
+            process.exit();
+        }, 5e3);
+
         const marble = Marble.Instance;
         marble.editStatus("offline");
         marble.commands.forEach(cmd => marble.slashInstance.unregisterCommand(cmd));
@@ -138,9 +143,5 @@ Marble.Instance.init();
             process.exit();
         });
         marble.disconnect({ reconnect: false });
-
-        await new Promise(r => setTimeout(r, 5e3));
-        console.log("Forced exit after timeout (5 seconds)");
-        process.exit();
     })
 );

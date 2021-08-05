@@ -1,6 +1,5 @@
-import * as fs from "fs/promises";
 import { Client, ClientOptions } from "eris";
-import { Ramune, UserClient } from "ramune";
+import { Ramune } from "ramune";
 import { CommandContext, GatewayServer, MessageOptions, SlashCreator } from "slash-create";
 
 import { Dev } from "./Commands/Dev";
@@ -31,8 +30,6 @@ export class Marble extends Client {
     public readonly store: Store;
     public readonly tracker: Tracker;
     public ramune!: Ramune;
-    public ramuneClient!: UserClient;
-    private refreshToken!: string;
 
     private readonly slashInstance = new SlashCreator({
         applicationID: env.botID,
@@ -114,11 +111,6 @@ export class Marble extends Client {
                 }
             }
         });
-        this.refreshToken = (await fs.readFile("./.refresh", "utf8")).trim();
-        this.ramuneClient = await this.ramune.createUserClient(this.refreshToken, "refresh");
-        this.ramuneClient.on("tokenUpdate", async token =>
-            await fs.writeFile("./.refresh", token.refresh_token!, "utf8")
-        );
         this.connect();
     }
 }

@@ -98,31 +98,25 @@ export class Tracker extends EventEmitter {
         await Store.Instance.getMaps().asyncMap(async map => {
             if (!map.map.is_scoreable) return;
 
-            const resCountry = (await Marble.Instance.ramuneClient.getBeatmapScores(map.map.id.toString(), {
-                mode: "osu",
-                type: BeatmapLeaderboardScope.Country
-            })).scores;
-            const resExt = (await Promise.all(
-                map.league.players
-                    .valuesAsArray()
-                    .filter(p => p.osu.country_code !== "KH")
-                    .map(async p => {
-                        try {
-                            return (await Marble.Instance.ramune.getBeatmapUserScore(
-                                map.map.id.toString(),
-                                p.osu.id.toString(),
-                                {
-                                    mode: "osu",
-                                    type: BeatmapLeaderboardScope.Global
-                                }
-                            )).score;
-                        } catch (e) {
-                            return;
-                        }
-                    })
-            )).filter((i): i is Score => i !== undefined);
+            const res = await map.league.players
+                .asyncMap(async player => {
+                    try {
+                        return (await Marble.Instance.ramune.getBeatmapUserScore(
+                            map.map.id.toString(),
+                            player.osu.id.toString(),
+                            {
+                                mode: "osu",
+                                type: BeatmapLeaderboardScope.Global
+                            }
+                        )).score;
+                    } catch (e) {
+                        console.error(`Failed fetching scores of ${player.osu.id} during sync`);
+                        return;
+                    }
+                });
 
-            const res = [...resCountry, ...resExt]
+            const filtered = res
+                .filter((score): score is Score => score !== undefined)
                 .filter(score =>
                     (map.mods ?? []).every(mod => {
                         if (score.mods.includes("NC") && mod === "DT")
@@ -132,7 +126,7 @@ export class Tracker extends EventEmitter {
                 )
                 .sort((a, b) => b.score - a.score);
 
-            await asyncForEach(res, async score => await this.process(score, false));
+            await asyncForEach(filtered, async score => await this.process(score, false));
         });
         return;
     }

@@ -4,6 +4,7 @@ import { EventEmitter } from "events";
 import {
     BeatmapLeaderboardScope,
     Gamemode,
+    RequestNetworkError,
     RequestHandler,
     RequestType,
     Score,
@@ -109,8 +110,14 @@ export class Tracker extends EventEmitter {
                                 type: BeatmapLeaderboardScope.Global
                             }
                         )).score;
-                    } catch (e) {
-                        console.error(`Failed fetching scores of ${player.osu.id} during sync`);
+                    } catch (error) {
+                        if (
+                            error?.type === "network" &&
+                            (error as RequestNetworkError).code === 404
+                        )
+                            return;
+
+                        console.error(`Failed fetching scores of ${player.osu.id} during sync`, error);
                         return;
                     }
                 });

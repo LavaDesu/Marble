@@ -54,13 +54,12 @@ export class Dev extends SlashCommand {
                 }
             ],
             defaultPermission: false,
-            // TODO: these are hardcoded
-            guildIDs: "376642895093956608",
+            guildIDs: Marble.Environment.devGuild,
             permissions: {
-                "376642895093956608": [
+                [Marble.Environment.devGuild]: [
                     {
                         type: ApplicationCommandPermissionType.USER,
-                        id: "368398754077868032",
+                        id: Marble.Environment.devID,
                         permission: true
                     }
                 ]

@@ -1,6 +1,8 @@
 # use flake
 
 # export NODE_ENV="development"
+export MARBLE_DEV_GUILD=""
+export MARBLE_DEV=""
 export MARBLE_BOT=""
 export MARBLE_KEY=""
 export MARBLE_TOKEN=""

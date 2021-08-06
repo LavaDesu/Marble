@@ -12,6 +12,8 @@ import { Tracker } from "./Tracker";
 
 const env = {
     development: process.env.NODE_ENV === "development",
+    devGuild: process.env.MARBLE_DEV_GUILD ?? "",
+    devID: process.env.MARBLE_DEV ?? "",
     botID: process.env.MARBLE_BOT ?? "",
     botKey: process.env.MARBLE_KEY ?? "",
     botToken: process.env.MARBLE_TOKEN ?? "",

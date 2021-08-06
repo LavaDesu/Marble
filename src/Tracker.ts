@@ -62,7 +62,7 @@ export class Tracker extends EventEmitter {
         if (this.trackTimer)
             clearInterval(this.trackTimer);
 
-        this.trackTimer = setInterval(this.refresh.bind(this), 300000);
+        this.trackTimer = setInterval(this.refresh.bind(this), 60e3);
         await this.syncScores();
         await this.replayScores();
         await this.refresh();

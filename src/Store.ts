@@ -5,7 +5,7 @@ import { asyncForEach } from "./Utils";
 import { Collection } from "./Util/Collection";
 import { Marble } from "./Marble";
 
-interface LeagueData {
+interface Data {
     commandGuilds: string[];
     rankEmotes: { [name in ScoreRank]: string };
     targetGuild: string;
@@ -56,19 +56,19 @@ export class Store {
 
     public async reload(): Promise<void> {
         const raw = await fs.readFile("./data.json", "utf8");
-        const leagueData: LeagueData = JSON.parse(raw);
-        const guild = Marble.Instance.guilds.get(leagueData.targetGuild);
+        const data: Data = JSON.parse(raw);
+        const guild = Marble.Instance.guilds.get(data.targetGuild);
         if (!guild) throw new Error("missing guild");
 
-        this.commandGuilds = leagueData.commandGuilds;
-        this.rankEmotes = leagueData.rankEmotes;
+        this.commandGuilds = data.commandGuilds;
+        this.rankEmotes = data.rankEmotes;
         this.leagues.clear();
         this.maps.clear();
         this.players.clear();
         this.discordPlayers.clear();
 
-        for (const leagueName in leagueData.leagues) {
-            const rawLeague = leagueData.leagues[leagueName];
+        for (const leagueName in data.leagues) {
+            const rawLeague = data.leagues[leagueName];
 
             const league: StoreLeague = {
                 name: leagueName,

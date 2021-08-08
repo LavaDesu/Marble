@@ -26,18 +26,6 @@ export class Leaderboards extends SlashCommand {
             ],
             defaultPermission: true,
             guildIDs: Store.Instance.getCommandGuilds()
-            // permissions: {
-            //     "376642895093956608": [{
-            //         type: ApplicationCommandPermissionType.USER,
-            //         id: "368398754077868032",
-            //         permission: true
-            //     }],
-            //     "522838273299841054": [{
-            //         type: ApplicationCommandPermissionType.USER,
-            //         id: "232117252692901890",
-            //         permission: true
-            //     }]
-            // }
         });
     }
 
@@ -81,44 +69,6 @@ export class Leaderboards extends SlashCommand {
             .sort((a, b) => b[1] - a[1])
             .map(entry => `${entry[0]} - **${entry[1]}** points`)
             .join("\n");
-
-        // mfw O(3n)
-        // const desc: string = league.players.map(player => {
-        //     const debug: any[] = [];
-        //     let points = 0;
-        //     maps.forEach(map => {
-        //         // [naming] this is kinda getting ridiculous
-        //         // map.map.map.id
-        //         map.scores.forEach((score, index) => {
-        //             if (score.user!.id !== player.osu.id)
-        //                 return;
-        //             switch (index) {
-        //                 case 0: {
-        //                     debug.push(`3 -> ${map.map.map.beatmapset!.title}`);
-        //                     points += 3;
-        //                     break;
-        //                 }
-        //                 case 1: {
-        //                     debug.push(`2 -> ${map.map.map.beatmapset!.title}`);
-        //                     points += 2;
-        //                     break;
-        //                 }
-        //                 case 2: {
-        //                     debug.push(`1 -> ${map.map.map.beatmapset!.title}`);
-        //                     points += 1;
-        //                     break;
-        //                 }
-        //                 default: break;
-        //             }
-        //         });
-        //     });
-        //     debug.forEach(a => console.log(player.osu.username, a));
-
-        //     return { name: sanitiseDiscord(player.osu.username), points };
-        // })
-        //     .sort((a, b) => b.points - a.points)
-        //     .map(point => `${point.name} - ${point.points} points`)
-        //     .join("\n");
 
         await ctx.editOriginal({
             embeds: [{

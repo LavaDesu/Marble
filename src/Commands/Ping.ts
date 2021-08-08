@@ -12,15 +12,6 @@ export class Ping extends SlashCommand {
             description: "classic ping pong test thingy",
             defaultPermission: true,
             guildIDs: Store.Instance.getCommandGuilds()
-            // permissions: {
-            //     "376642895093956608": [
-            //         {
-            //             type: ApplicationCommandPermissionType.USER,
-            //             id: "368398754077868032",
-            //             permission: true
-            //         }
-            //     ]
-            // }
         });
     }
 

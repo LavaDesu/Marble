@@ -27,27 +27,9 @@ export class MapCommand extends SlashCommand {
                     type: CommandOptionType.INTEGER,
                     required: false
                 }
-                // {
-                //     name: "debug",
-                //     description: "spam every map",
-                //     type: CommandOptionType.BOOLEAN,
-                //     required: false
-                // }
             ],
             defaultPermission: true,
             guildIDs: Store.Instance.getCommandGuilds()
-            // permissions: {
-            //     "376642895093956608": [{
-            //         type: ApplicationCommandPermissionType.USER,
-            //         id: "368398754077868032",
-            //         permission: true
-            //     }],
-            //     "522838273299841054": [{
-            //         type: ApplicationCommandPermissionType.USER,
-            //         id: "232117252692901890",
-            //         permission: true
-            //     }]
-            // }
         });
         MapCommand.Instance = this;
     }

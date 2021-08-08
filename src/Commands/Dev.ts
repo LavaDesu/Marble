@@ -113,8 +113,6 @@ export class Dev extends SlashCommand {
 
         if (ctx.options.eval) {
             eval(ctx.options.eval.code);
-            // eslint-disable-next-line
-            // await Object.getPrototypeOf(async function() {}).constructor(ctx.options.eval.code)();
             await ctx.send("eval");
         }
         if (ctx.options.clear) {

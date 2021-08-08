@@ -49,7 +49,6 @@ export class Store {
     private readonly maps: Collection<number, StoreMap> = new Collection();
     private readonly players: Collection<number, StorePlayer> = new Collection();
     private readonly discordPlayers: Collection<string, StorePlayer> = new Collection();
-    // private readonly weeks: Collection<number, StoreWeek> = new Collection();
 
     constructor() {
         Store.Instance = this;
@@ -67,7 +66,6 @@ export class Store {
         this.maps.clear();
         this.players.clear();
         this.discordPlayers.clear();
-        // this.weeks.clear();
 
         for (const leagueName in leagueData.leagues) {
             const rawLeague = leagueData.leagues[leagueName];
@@ -137,9 +135,6 @@ export class Store {
     public getRankEmote(rank: ScoreRank) {
         return this.rankEmotes[rank];
     }
-    // public getWeek(number: number) {
-    //     return this.weeks.get(number);
-    // }
 
     public getLeagues() {
         return this.leagues;
@@ -150,9 +145,6 @@ export class Store {
     public getPlayers() {
         return this.players;
     }
-    // public getWeeks() {
-    //     return this.weeks;
-    // }
     public getCommandGuilds() {
         return this.commandGuilds;
     }

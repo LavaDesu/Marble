@@ -124,13 +124,6 @@ export class Tracker extends EventEmitter {
 
             const filtered = res
                 .filter((score): score is Score => score !== undefined)
-                .filter(score =>
-                    (map.mods ?? []).every(mod => {
-                        if (score.mods.includes("NC") && mod === "DT")
-                            return true;
-                        return score.mods.includes(mod);
-                    })
-                )
                 .sort((a, b) => b.score - a.score);
 
             await asyncForEach(filtered, async score => await this.process(score, false));
@@ -184,6 +177,15 @@ export class Tracker extends EventEmitter {
         const scores = this.scores.getOrSet(score.beatmap!.id, new Collection());
         const previousScore = scores.get(score.user_id);
         if (previousScore && previousScore.score > score.score) return;
+
+        // Check 3: Does the score have the necessary mods?
+        const neededMods = map.mods ?? [];
+        const hasMods = neededMods.every(mod => {
+            if (score.mods.includes("NC") && mod === "DT")
+                return true;
+            return score.mods.includes(mod);
+        });
+        if (!hasMods) return;
 
         scores.set(score.user_id, score);
 

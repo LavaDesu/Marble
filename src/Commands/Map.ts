@@ -82,6 +82,10 @@ export class MapCommand extends SlashCommand {
         const mapID = map.map.id;
         const mods = map.week.mods.get(mapID);
 
+        const sender = Store.Instance.getPlayerByDiscord(ctx.user.id);
+        if (sender)
+            await Marble.Instance.tracker.refreshPlayer(sender.osu.id);
+
         const scores = Marble.Instance.tracker.getMapScores(map.map.id)?.valuesAsArray() ?? [];
 
         const fields: EmbedField[] = scores

@@ -58,6 +58,8 @@ export class Leaderboards extends SlashCommand {
             return;
         }
         const sender = Store.Instance.getPlayerByDiscord(ctx.user.id);
+        if (sender)
+            await Marble.Instance.tracker.refreshPlayer(sender.osu.id);
 
         const maps = Marble.Instance.tracker.getScores();
 

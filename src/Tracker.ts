@@ -139,25 +139,34 @@ export class Tracker extends EventEmitter {
     }
 
     private async refresh() {
-        const queue: Score[] = [];
-
-        await Store.Instance.getPlayers().asyncMap(async player => {
-            let res: Score[];
-            try {
-                res = await Marble.Instance.ramune.getUserScores(player.osu.id.toString(), ScoreType.Recent, Gamemode.Osu);
-            } catch (e) { return console.log(e); }
-
-            const oldScores = this.plays.getOrSet(player.osu.id, []);
-            const newScores = res.filter(score => !oldScores.includes(score.id));
-            if (newScores.length)
-                queue.push(...newScores);
-            this.plays.set(player.osu.id, res.map(i => i.id));
-        });
+        const res = await Store.Instance.getPlayers().asyncMap(async player => await this.refreshPlayer(player.osu.id, false));
+        const scores = res
+            .flat(1)
+            .sort((a, b) => a.id - b.id);
 
         if (this.initialised)
-            await Promise.all(queue.map(async score => await this.process(score)));
+            await Promise.all(scores.map(async score => await this.process(score)));
         else
             this.initialised = true;
+    }
+
+    public async refreshPlayer(player: number, shouldProcess: boolean = true) {
+        let res: Score[];
+        try {
+            res = await Marble.Instance.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu);
+        } catch (e) {
+            console.log(e);
+            return [];
+        }
+
+        const oldScores = this.plays.getOrSet(player, []);
+        const newScores = res.filter(score => !oldScores.includes(score.id));
+        this.plays.set(player, res.map(i => i.id));
+
+        if (shouldProcess)
+            await asyncMap(newScores, async score => await this.process(score));
+
+        return newScores;
     }
 
     public async process(score: Score, shouldPost: boolean = true, shouldStore: boolean = true) {

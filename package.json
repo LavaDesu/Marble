@@ -7,9 +7,11 @@
   "scripts": {
     "build": "tsc",
     "check": "tsc --noEmit",
-    "start": "tsnd --rs --respawn --transpile-only -- src/Marble.ts",
-    "start:dev": "tsnd --rs --inspect --respawn --transpile-only -- src/Marble.ts",
-    "watch": "tsnd --respawn --transpile-only src/Marble.ts"
+    "lint": "eslint -c .eslintrc.cjs --ext .ts src",
+    "start": "tsnd --rs --transpile-only -- src/Marble.ts",
+    "start:dev": "tsnd --rs --inspect --transpile-only -- src/Marble.ts",
+    "watch": "tsnd --rs --respawn --transpile-only src/Marble.ts",
+    "watch:dev": "tsnd --rs --inspect --respawn --transpile-only -- src/Marble.ts"
   },
   "devDependencies": {
     "@types/node": "^16.4.10",

@@ -1,9 +1,6 @@
 import {
-    ButtonStyle,
     CommandContext,
     CommandOptionType,
-    ComponentActionRow,
-    ComponentType,
     SlashCommand,
     SlashCreator
 } from "slash-create";

@@ -1,5 +1,4 @@
 import {
-    AnyComponentButton,
     ButtonStyle,
     CommandContext,
     CommandOptionType,

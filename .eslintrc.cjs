@@ -61,7 +61,7 @@ module.exports = {
                 "selector": "variable",
                 "types": ["boolean"],
                 "format": ["PascalCase"],
-                "prefix": ["is"]
+                "prefix": ["is", "has", "should"]
             },
             {
                 "selector": ["enumMember"],

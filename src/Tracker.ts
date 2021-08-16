@@ -148,7 +148,7 @@ export class Tracker extends EventEmitter {
         try {
             res = await Marble.Instance.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu);
         } catch (e) {
-            console.log(e);
+            console.log("Error getting user scores", player, e);
             return [];
         }
 

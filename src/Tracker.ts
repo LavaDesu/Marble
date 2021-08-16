@@ -179,13 +179,8 @@ export class Tracker extends EventEmitter {
         if (previousScore && previousScore.score > score.score) return;
 
         // Check 3: Does the score have the necessary mods?
-        const neededMods = map.mods ?? [];
-        const hasMods = neededMods.every(mod => {
-            if (score.mods.includes("NC") && mod === "DT")
-                return true;
-            return score.mods.includes(mod);
-        });
-        if (!hasMods) return;
+        if (!Store.Instance.testMods(map.map.id, score.mods))
+            return;
 
         scores.set(score.user_id, score);
 
@@ -212,7 +207,7 @@ export class Tracker extends EventEmitter {
                 `League = ${map.league.name}`,
                 `Week = ${map.week.number}`,
                 `Map ID = ${beatmap.id}`,
-                `Required Mods = ${map.mods ? map.mods.join() : "None"}`
+                `Required Mods = ${Store.Instance.getFriendlyMods(beatmap.id)}`
             ].join("\n"),
             fields: [
                 {
@@ -227,6 +222,7 @@ export class Tracker extends EventEmitter {
                 },
                 {
                     name: "Ranking Changes",
+                    // TODO
                     value: "None (placeholder)"
                 }
             ],

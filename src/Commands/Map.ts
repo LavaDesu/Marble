@@ -60,9 +60,6 @@ export class MapCommand extends SlashCommand {
     }
 
     public async exec(ctx: CommandContext, map: StoreMap, debug: boolean = false) {
-        const mapID = map.map.id;
-        const mods = map.week.mods.get(mapID);
-
         const sender = Store.Instance.getPlayerByDiscord(ctx.user.id);
         if (sender)
             await Marble.Instance.tracker.refreshPlayer(sender.osu.id);
@@ -92,7 +89,7 @@ export class MapCommand extends SlashCommand {
                 `League = ${map.league.name}`,
                 `Week = ${map.week.number}`,
                 `Map ID = ${map.map.id}`,
-                `Required Mods = ${mods ? mods.join() : "None"}`
+                `Required Mods = ${Store.Instance.getFriendlyMods(map.map.id)}`
             ].join("\n"),
             fields: fields.slice(0, 3)
         };

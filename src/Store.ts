@@ -13,7 +13,7 @@ interface Data {
 }
 interface League {
     players: [string, string][];
-    maps: [string, Mod[]?][][];
+    maps: [string, OperatorNode?][][];
 }
 
 export interface StoreLeague {
@@ -29,15 +29,19 @@ export interface StorePlayer {
 export interface StoreWeek {
     league: StoreLeague;
     maps: Collection<number, StoreMap>;
-    mods: Collection<number, Mod[]>;
+    mods: Collection<number, OperatorNode>;
     number: number;
 }
 export interface StoreMap {
     league: StoreLeague;
     map: Beatmap;
-    mods?: Mod[];
+    mods?: OperatorNode;
     week: StoreWeek;
 }
+export interface OperatorOR {
+    OR: OperatorNode[];
+}
+export type OperatorNode = OperatorOR | Mod | Mod[];
 
 export class Store {
     public static Instance: Store;
@@ -130,6 +134,67 @@ export class Store {
             });
         }
         console.log("Data loaded");
+    }
+
+    public getFriendlyMods(mapID: number): string {
+        const map = this.maps.get(mapID);
+
+        if (!map) {
+            console.error("missing map!", mapID);
+            return "";
+        }
+
+        const node = map.mods;
+        if (!node)
+            return "Freemod :)";
+
+        return this.formatOperator(node);
+    }
+
+    private formatOperator(node: OperatorNode): string {
+        if (Array.isArray(node))
+            if (node.length === 0)
+                return "NM";
+            else
+                return node.join("");
+
+        if (typeof node === "string")
+            return node + " + Freemod";
+
+        if (node.OR)
+            return "Either " +
+                node.OR.map(v => this.formatOperator(v)).join(" or ");
+
+        return "";
+    }
+
+    public testMods(mapID: number, mods: Mod[]): boolean {
+        const map = this.maps.get(mapID);
+
+        if (!map)
+            return false;
+
+        const node = map.mods;
+        if (!node)
+            return true;
+
+        return this.testOperator(node, mods);
+    }
+
+    private testOperator(node: OperatorNode, input: Mod[]): boolean {
+        if (Array.isArray(node))
+            return [...input].sort().toString() === [...node].sort().toString();
+
+        if (typeof node === "string")
+            if (node === "DT" && input.includes("NC"))
+                return true;
+            else
+                return input.includes(node);
+
+        if (node.OR)
+            return node.OR.some(v => this.testOperator(v, input));
+
+        return false;
     }
 
     public getLeague(name: string) {

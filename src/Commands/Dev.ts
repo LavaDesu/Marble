@@ -93,6 +93,7 @@ export class Dev extends SlashCommand {
             console.log("reload");
             try {
                 await Store.Instance.reload();
+                await Marble.Instance.tracker.syncScores();
                 await ctx.send("a ok");
             } catch(e) {
                 console.error(e);

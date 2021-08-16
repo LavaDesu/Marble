@@ -86,8 +86,13 @@ export class Store {
                     discord = guild.members.get(player[0]);
                 if (!discord) throw new Error("missing discord");
 
-                const osu = await Marble.Instance.ramune.getUser(player[1]);
-                if (!osu) throw new Error("missing osu");
+                let osu;
+                try {
+                    osu = await Marble.Instance.ramune.getUser(player[1]);
+                } catch(e) {
+                    console.error("missing user", player[1], e);
+                    return;
+                }
                 const res: StorePlayer = { discord, league, osu };
                 league.players.set(osu.id, res);
                 this.players.set(osu.id, res);
@@ -106,7 +111,14 @@ export class Store {
                 await asyncForEach(rawWeek, async rawMap => {
                     this.maps.placehold(parseInt(rawMap[0]));
                     week.maps.placehold(parseInt(rawMap[0]));
-                    const map = await Marble.Instance.ramune.lookupBeatmap({ id: rawMap[0] });
+
+                    let map;
+                    try {
+                        map = await Marble.Instance.ramune.lookupBeatmap({ id: rawMap[0] });
+                    } catch(e) {
+                        console.error("missing map", rawMap[0], e);
+                        return;
+                    }
                     const res: StoreMap = { league, map, week };
                     if (rawMap[1]) {
                         res.mods = rawMap[1];

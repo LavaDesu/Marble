@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import type { Member } from "eris";
-import type { Beatmap, Mod, ScoreRank, User as RamuneUser } from "ramune";
+import type { Mod, ScoreRank, User as RamuneUser } from "ramune";
+import type { Beatmap } from "ramune/lib/Responses";
 import { asyncForEach } from "./Utils";
 import { Collection } from "./Util/Collection";
 import { Marble } from "./Marble";
@@ -118,7 +119,7 @@ export class Store {
 
                     let map;
                     try {
-                        map = await Marble.Instance.ramune.lookupBeatmap({ id: rawMap[0] });
+                        map = await Marble.Instance.ramune.getBeatmap(rawMap[0]);
                     } catch(e) {
                         console.error("missing map", rawMap[0], e);
                         return;

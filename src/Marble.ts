@@ -109,7 +109,7 @@ export class Marble extends Client {
             this.slashInstance.registerCommands(this.commands).syncCommands();
         });
 
-        this.ramune = await Ramune.create(env.osuID, env.osuSecret, {
+        this.ramune = new Ramune(env.osuID, env.osuSecret, {
             requestHandler: {
                 rateLimit: {
                     limit: 500,
@@ -117,6 +117,7 @@ export class Marble extends Client {
                 }
             }
         });
+        await this.ramune.refreshToken();
         this.connect();
     }
 }

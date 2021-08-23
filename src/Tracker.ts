@@ -7,9 +7,9 @@ import {
     RequestNetworkError,
     RequestHandler,
     RequestType,
-    Score,
     ScoreType
 } from "ramune";
+import type { Score } from "ramune/lib/Responses";
 import { MessageEmbedOptions } from "slash-create";
 import { Marble } from "./Marble";
 import { Collection } from "./Util/Collection";

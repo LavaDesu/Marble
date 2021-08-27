@@ -219,12 +219,12 @@ export class Tracker extends EventEmitter {
                         `Combo: **${score.max_combo}**/${map.map.max_combo!}x`,
                         score.best_id ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})` : undefined
                     ].filter(i => i !== undefined).join("\n")
-                },
-                {
-                    name: "Ranking Changes",
-                    // TODO
-                    value: "None (placeholder)"
                 }
+                // TODO
+                // {
+                //     name: "Ranking Changes",
+                //     value: "None (placeholder)"
+                // }
             ],
             timestamp: new Date(score.created_at)
         };

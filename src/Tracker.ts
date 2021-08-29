@@ -97,7 +97,7 @@ export class Tracker extends EventEmitter {
 
     public async syncScores() {
         await Store.Instance.getMaps().asyncMap(async map => {
-            if (!map.map.is_scoreable) return;
+            if (!map.map.isScorable) return;
 
             const res = await map.league.players
                 .asyncMap(async player => {
@@ -144,17 +144,18 @@ export class Tracker extends EventEmitter {
     }
 
     public async refreshPlayer(player: number, shouldProcess: boolean = true) {
-        let res: Score[];
+        let scores: Score[];
         try {
-            res = await Marble.Instance.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu);
+            const res = await Marble.Instance.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu).next(2);
+            scores = res.value;
         } catch (e) {
             console.log("Error getting user scores", player, e);
             return [];
         }
 
         const oldScores = this.plays.getOrSet(player, []);
-        const newScores = res.filter(score => !oldScores.includes(score.id));
-        this.plays.set(player, res.map(i => i.id));
+        const newScores = scores.filter(score => !oldScores.includes(score.id));
+        this.plays.set(player, scores.map(i => i.id));
 
         if (shouldProcess)
             await asyncMap(newScores, async score => await this.process(score));
@@ -193,7 +194,7 @@ export class Tracker extends EventEmitter {
 
     private async post(map: StoreMap, score: Score) {
         const beatmap = map.map;
-        const beatmapset = beatmap.beatmapset!;
+        const beatmapset = map.beatmapset;
         const user = score.user!;
 
         const embed: MessageEmbedOptions = {
@@ -216,7 +217,7 @@ export class Tracker extends EventEmitter {
                         `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
                         `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
                         `Rank: ${Store.Instance.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
-                        `Combo: **${score.max_combo}**/${map.map.max_combo!}x`,
+                        `Combo: **${score.max_combo}**/${map.map.maxCombo?.toString() ?? "0"}x`,
                         score.best_id ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})` : undefined
                     ].filter(i => i !== undefined).join("\n")
                 }

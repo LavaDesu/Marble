@@ -75,16 +75,16 @@ export class MapCommand extends SlashCommand {
                     `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
                     `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
                     `Rank: ${Store.Instance.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
-                    `Combo: **${score.max_combo}**/${map.map.max_combo!}x`,
+                    `Combo: **${score.max_combo}**/${map.map.maxCombo!}x`,
                     `Set <t:${(new Date(score.created_at).getTime() / 1000).toString()}:R>`,
                     score.best_id ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})` : undefined
                 ].filter(s => s !== undefined).join("\n")
             }));
 
         const embed: MessageEmbedOptions = {
-            title: `${map.map.beatmapset!.artist} - ${map.map.beatmapset!.title} [${map.map.version}]`,
+            title: `${map.beatmapset.artist} - ${map.beatmapset.title} [${map.map.version}]`,
             url: map.map.url,
-            thumbnail: { url: `https://b.ppy.sh/thumb/${map.map.beatmapset!.id}l.jpg` },
+            thumbnail: { url: `https://b.ppy.sh/thumb/${map.beatmapset.id}l.jpg` },
             description: [
                 `League = ${map.league.name}`,
                 `Week = ${map.week.number}`,
@@ -180,7 +180,7 @@ export class MapCommand extends SlashCommand {
                 max_values: 1,
                 options: week.maps.map((weekMap, id, index) => ({
                     label: `Map ${(index + 1).toString()} (${id.toString()})`,
-                    description: weekMap.map.beatmapset!.title,
+                    description: weekMap.beatmapset.title,
                     value: weekMap.map.id.toString(),
                     default: false
                 }))

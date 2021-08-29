@@ -1,7 +1,6 @@
 import * as fs from "fs/promises";
 import type { Member } from "eris";
-import type { Mod, ScoreRank, User as RamuneUser } from "ramune";
-import type { Beatmap } from "ramune/lib/Responses";
+import type { Beatmap, Beatmapset, Mod, ScoreRank, User as RamuneUser } from "ramune";
 import { asyncForEach } from "./Utils";
 import { Collection } from "./Util/Collection";
 import { Marble } from "./Marble";
@@ -36,6 +35,7 @@ export interface StoreWeek {
 export interface StoreMap {
     league: StoreLeague;
     map: Beatmap;
+    beatmapset: Beatmapset;
     mods?: OperatorNode;
     week: StoreWeek;
 }
@@ -118,13 +118,20 @@ export class Store {
                     week.maps.placehold(parseInt(rawMap[0]));
 
                     let map;
+                    let beatmapset;
                     try {
                         map = await Marble.Instance.ramune.getBeatmap(rawMap[0]);
+                        beatmapset = await map.beatmapset!.eval();
                     } catch(e) {
                         console.error("missing map", rawMap[0], e);
                         return;
                     }
-                    const res: StoreMap = { league, map, week };
+                    if (!beatmapset) {
+                        console.error("missing beatmapset", rawMap[0]);
+                        return;
+                    }
+
+                    const res: StoreMap = { league, map, beatmapset, week };
                     if (rawMap[1]) {
                         res.mods = rawMap[1];
                         week.mods.set(map.id, rawMap[1]);

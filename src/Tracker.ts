@@ -23,14 +23,14 @@ export interface Tracker {
     on: TrackerEvents<this>;
     once: TrackerEvents<this>;
 }
-// TODO: rename plays and scores
 export class Tracker extends EventEmitter {
     private trackTimer?: NodeJS.Timer;
-    /* This collection is used to track scores; it stores all recent plays of a user
+    /**
+     * This collection is used to track all scores; it stores all recent plays of a user
      * and used to detect new recent plays
      * format: Collection<PlayerID, ScoreID>
      */
-    private readonly plays: Collection<number, number[]>;
+    private readonly allScores: Collection<number, number[]>;
     private readonly requestHandler = new RequestHandler({
         defaultHost: "discord.com",
         rateLimit: {
@@ -43,18 +43,17 @@ export class Tracker extends EventEmitter {
         token: Marble.Environment.webhookToken
     };
 
-    /* This collection is used to track all of the user's top scores per map.
+    /**
+     * This collection is used to track the user's top scores per map.
      * format: Collection<MapID, Collection<PlayerID, Score>>
      */
     private readonly scores: Collection<number, Collection<number, Score>>;
-    private initialised: boolean;
     private recording: boolean;
 
     constructor() {
         super();
-        this.plays = new Collection();
+        this.allScores = new Collection();
         this.scores = new Collection();
-        this.initialised = false;
         this.recording = true;
     }
 
@@ -65,7 +64,7 @@ export class Tracker extends EventEmitter {
         this.trackTimer = setInterval(this.refresh.bind(this), 60e3);
         await this.syncScores();
         await this.replayScores();
-        await this.refresh();
+        await this.updateScores();
         return;
     }
 
@@ -131,41 +130,65 @@ export class Tracker extends EventEmitter {
         return;
     }
 
+    private async updateScores() {
+        console.log("Checking for lost scores");
+        const lostScores: Score[] = [];
+        await Store.Instance.getPlayers().asyncMap(async player => {
+            const plays = this.allScores.getOrSet(player.osu.id, []);
+            const cursor = Marble.Instance.ramune.getUserScores(player.osu.id, ScoreType.Recent, Gamemode.Osu);
+            for await (const score of cursor.iterate(5)) {
+                if (plays.includes(score.id))
+                    break;
+
+                lostScores.push(score);
+            }
+        });
+        if (!lostScores.length) {
+            console.log("No scores to recover");
+            return;
+        }
+        console.log(`Recovering ${lostScores.length} lost scores`);
+        await asyncMap(lostScores, async score => await this.process(score));
+    }
+
     private async refresh() {
         const res = await Store.Instance.getPlayers().asyncMap(async player => await this.refreshPlayer(player.osu.id, false));
         const scores = res
             .flat(1)
             .sort((a, b) => a.id - b.id);
 
-        if (this.initialised)
-            await Promise.all(scores.map(async score => await this.process(score)));
-        else
-            this.initialised = true;
+        await Promise.all(scores.map(async score => await this.process(score)));
     }
 
     public async refreshPlayer(player: number, shouldProcess: boolean = true) {
-        let scores: Score[];
+        const scores: Score[] = [];
+        const playerScores = this.allScores.getOrSet(player, []);
+
         try {
-            const res = await Marble.Instance.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu).next(2);
-            scores = res.value;
-        } catch (e) {
-            console.log("Error getting user scores", player, e);
+            const cursor = Marble.Instance.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu);
+            for await (const score of cursor.iterate(1)) {
+                if (playerScores.includes(score.id))
+                    break;
+
+                scores.push(score);
+            }
+        } catch(e) {
+            console.error("Error getting user scores", player, e);
             return [];
         }
 
-        const oldScores = this.plays.getOrSet(player, []);
-        const newScores = scores.filter(score => !oldScores.includes(score.id));
-        this.plays.set(player, scores.map(i => i.id));
+        playerScores.push(...scores.map(i => i.id));
 
         if (shouldProcess)
-            await asyncMap(newScores, async score => await this.process(score));
+            await asyncMap(scores, async score => await this.process(score));
 
-        return newScores;
+        return scores;
     }
 
     public async process(score: Score, shouldPost: boolean = true, shouldStore: boolean = true) {
         this.emit("newScore", score);
 
+        this.allScores.getOrSet(score.user_id, []).push(score.id);
         if (this.recording && shouldStore)
             await writeFile(`./scores/${score.id}.json`, JSON.stringify(score, undefined, 4));
 

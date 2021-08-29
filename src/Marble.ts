@@ -69,7 +69,6 @@ export class Marble extends Client {
                         handler(event.d as any);
                 });
             }))
-            .syncCommands()
             .on("commandBlock", (cmd, _, reason, data) => {
                 console.error("Command blocked", cmd.commandName, reason, data);
             })
@@ -92,13 +91,17 @@ export class Marble extends Client {
 
         this.on("ready", () => {
             console.log((new Date()).toISOString(), `Connected as ${this.user.username}#${this.user.discriminator} (${this.user.id})`);
-            this.editStatus("online");
         });
 
         this.once("ready", async () => {
+            this.editStatus("idle");
             await this.store.reload();
             await this.tracker.init();
 
+            this.slashInstance.once("synced", () => {
+                this.editStatus("online");
+                console.log("Ready~");
+            });
             this.commands.push(
                 new Ping(this.slashInstance),
                 new Dev(this.slashInstance),

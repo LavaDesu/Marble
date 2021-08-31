@@ -6,8 +6,12 @@ import { Blob } from "./Blob";
 
 interface Data {
     commandGuilds: string[];
+    inviteTracking: InviteTrackingSettings;
     rankEmotes: { [name in ScoreRank]: string };
     leagues: Record<string, League>;
+}
+interface InviteTrackingSettings {
+    guilds: Record<string, string>;
 }
 interface League {
     players: [string, string][];
@@ -45,6 +49,7 @@ export class Store {
     public static Instance: Store;
 
     private commandGuilds: string[] = [];
+    private inviteTracking: InviteTrackingSettings = { guilds: {} };
     private rankEmotes!: { [name in ScoreRank]: string };
 
     private readonly leagues: Collection<string, StoreLeague> = new Collection();
@@ -61,6 +66,7 @@ export class Store {
         const data: Data = JSON.parse(raw);
 
         this.commandGuilds = data.commandGuilds;
+        this.inviteTracking = data.inviteTracking;
         this.rankEmotes = data.rankEmotes;
         this.leagues.clear();
         this.maps.clear();
@@ -219,6 +225,9 @@ export class Store {
     }
     public getCommandGuilds() {
         return this.commandGuilds;
+    }
+    public getInviteTrackingSettings() {
+        return this.inviteTracking;
     }
     public getRankEmotes() {
         return this.rankEmotes;

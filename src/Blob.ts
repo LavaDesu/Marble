@@ -1,4 +1,4 @@
-import { Client, ClientOptions } from "eris";
+import { Client, ClientOptions, Constants as ErisConstants } from "eris";
 import { Ramune } from "ramune";
 import { CommandContext, GatewayServer, MessageOptions, SlashCommand, SlashCreator } from "slash-create";
 
@@ -9,6 +9,7 @@ import { Ping } from "./Commands/Ping";
 import { Queue } from "./Util/Queue";
 import { Store } from "./Store";
 import { Tracker } from "./Tracker";
+import { InviteTracker } from "./InviteTracker";
 
 const env = {
     development: process.env.NODE_ENV === "development",
@@ -29,6 +30,7 @@ export class Blob extends Client {
     public static readonly Environment = env;
 
     public readonly componentQueue: Queue<CommandContext>;
+    public readonly inviteTracker: InviteTracker;
     public readonly store: Store;
     public readonly tracker: Tracker;
     public ramune!: Ramune;
@@ -46,7 +48,9 @@ export class Blob extends Client {
             maxShards: "auto",
             defaultImageFormat: "png",
             defaultImageSize: 2048,
-            getAllUsers: true,
+            intents: ErisConstants.Intents.guilds
+                   + ErisConstants.Intents.guildInvites
+                   + ErisConstants.Intents.guildMembers,
             ...settings
         });
         Blob.Instance = this;
@@ -58,6 +62,7 @@ export class Blob extends Client {
             } catch(e) {}
         }, 600e3);
         this.store = new Store();
+        this.inviteTracker = new InviteTracker();
         this.tracker = new Tracker();
     }
 
@@ -96,6 +101,7 @@ export class Blob extends Client {
         this.once("ready", async () => {
             this.editStatus("idle");
             await this.store.reload();
+            this.inviteTracker.init();
             await this.tracker.init();
 
             this.slashInstance.once("synced", () => {

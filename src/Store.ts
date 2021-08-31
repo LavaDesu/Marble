@@ -1,5 +1,4 @@
 import * as fs from "fs/promises";
-import type { Member } from "eris";
 import type { Beatmap, Beatmapset, Mod, ScoreRank, User as RamuneUser } from "ramune";
 import { asyncForEach } from "./Utils";
 import { Collection } from "./Util/Collection";
@@ -8,7 +7,6 @@ import { Blob } from "./Blob";
 interface Data {
     commandGuilds: string[];
     rankEmotes: { [name in ScoreRank]: string };
-    targetGuild: string;
     leagues: Record<string, League>;
 }
 interface League {
@@ -22,7 +20,6 @@ export interface StoreLeague {
     weeks: Collection<number, StoreWeek>;
 }
 export interface StorePlayer {
-    discord: Member;
     league: StoreLeague;
     osu: RamuneUser;
 }
@@ -62,8 +59,6 @@ export class Store {
     public async reload(): Promise<void> {
         const raw = await fs.readFile("./data.json", "utf8");
         const data: Data = JSON.parse(raw);
-        const guild = Blob.Instance.guilds.get(data.targetGuild);
-        if (!guild) throw new Error("missing guild");
 
         this.commandGuilds = data.commandGuilds;
         this.rankEmotes = data.rankEmotes;
@@ -83,14 +78,6 @@ export class Store {
             this.leagues.set(leagueName, league);
 
             await asyncForEach(rawLeague.players, async player => {
-                let discord: Member | undefined;
-                if (Blob.Environment.development) {
-                    console.log("[dev] discord user stub");
-                    discord = guild.members.random();
-                } else
-                    discord = guild.members.get(player[0]);
-                if (!discord) throw new Error("missing discord");
-
                 let osu;
                 try {
                     osu = await Blob.Instance.ramune.getUser(player[1]);
@@ -98,10 +85,10 @@ export class Store {
                     console.error("missing user", player[1], e);
                     return;
                 }
-                const res: StorePlayer = { discord, league, osu };
+                const res: StorePlayer = { league, osu };
                 league.players.set(osu.id, res);
                 this.players.set(osu.id, res);
-                this.discordPlayers.set(discord.id, res);
+                this.discordPlayers.set(player[0], res);
             });
             await asyncForEach(rawLeague.maps, async (rawWeek, index) => {
                 const number = index + 1;

@@ -9,7 +9,7 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in rec {
       devShell = pkgs.mkShell {
-        buildInputs = with pkgs; [ nodejs-16_x ];
+        buildInputs = with pkgs; [ nodejs-16_x watchman ];
       };
     });
 }

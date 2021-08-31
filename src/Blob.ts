@@ -12,20 +12,20 @@ import { Tracker } from "./Tracker";
 
 const env = {
     development: process.env.NODE_ENV === "development",
-    devGuild: process.env.MARBLE_DEV_GUILD ?? "",
-    devID: process.env.MARBLE_DEV ?? "",
-    botID: process.env.MARBLE_BOT ?? "",
-    botKey: process.env.MARBLE_KEY ?? "",
-    botToken: process.env.MARBLE_TOKEN ?? "",
-    osuID: process.env.MARBLE_ID ?? "",
-    osuSecret: process.env.MARBLE_SECRET ?? "",
-    webhookID: process.env.MARBLE_WEBHOOK_ID ?? "",
-    webhookToken: process.env.MARBLE_WEBHOOK_TOKEN ?? ""
+    devGuild: process.env.BLOB_DEV_GUILD ?? "",
+    devID: process.env.BLOB_DEV ?? "",
+    botID: process.env.BLOB_BOT ?? "",
+    botKey: process.env.BLOB_KEY ?? "",
+    botToken: process.env.BLOB_TOKEN ?? "",
+    osuID: process.env.BLOB_ID ?? "",
+    osuSecret: process.env.BLOB_SECRET ?? "",
+    webhookID: process.env.BLOB_WEBHOOK_ID ?? "",
+    webhookToken: process.env.BLOB_WEBHOOK_TOKEN ?? ""
 };
 
 
-export class Marble extends Client {
-    public static Instance: Marble;
+export class Blob extends Client {
+    public static Instance: Blob;
     public static readonly Environment = env;
 
     public readonly componentQueue: Queue<CommandContext>;
@@ -49,7 +49,7 @@ export class Marble extends Client {
             getAllUsers: true,
             ...settings
         });
-        Marble.Instance = this;
+        Blob.Instance = this;
         this.componentQueue = new Queue(ctx => {
             if (ctx.messageID) try {
                 // Using allowedMention here to clear the components safely, as in
@@ -125,8 +125,8 @@ export class Marble extends Client {
     }
 }
 
-new Marble(env.botToken);
-Marble.Instance.init();
+new Blob(env.botToken);
+Blob.Instance.init();
 
 [ "SIGINT", "SIGTERM" ].map(signal =>
     process.on(signal, async () => {
@@ -137,17 +137,17 @@ Marble.Instance.init();
             process.exit();
         }, 5e3);
 
-        const marble = Marble.Instance;
-        marble.editStatus("offline");
-        marble.commands.forEach(cmd => marble.slashInstance.unregisterCommand(cmd));
-        await marble.componentQueue.clear();
+        const blob = Blob.Instance;
+        blob.editStatus("offline");
+        blob.commands.forEach(cmd => blob.slashInstance.unregisterCommand(cmd));
+        await blob.componentQueue.clear();
         // HACK: grace period for status edit to work
         await new Promise(r => setTimeout(r, 1e3));
 
-        marble.once("disconnect", () => {
+        blob.once("disconnect", () => {
             console.log("Disconnected. Goodbye!");
             process.exit();
         });
-        marble.disconnect({ reconnect: false });
+        blob.disconnect({ reconnect: false });
     })
 );

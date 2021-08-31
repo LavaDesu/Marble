@@ -1,6 +1,6 @@
 {
-  "name": "marble",
-  "description": "osu bot for local league event",
+  "name": "blob",
+  "description": "private bot for a particular discord server",
   "version": "0.2.0",
   "license": "MIT",
   "private": true,
@@ -8,10 +8,10 @@
     "build": "tsc",
     "check": "tsc --noEmit",
     "lint": "eslint -c .eslintrc.cjs --ext .ts src",
-    "start": "tsnd --rs --transpile-only -- src/Marble.ts",
-    "start:dev": "tsnd --rs --inspect --transpile-only -- src/Marble.ts",
-    "watch": "tsnd --rs --respawn --transpile-only src/Marble.ts",
-    "watch:dev": "tsnd --rs --inspect --respawn --transpile-only -- src/Marble.ts"
+    "start": "tsnd --rs --transpile-only -- src/Blob.ts",
+    "start:dev": "tsnd --rs --inspect --transpile-only -- src/Blob.ts",
+    "watch": "tsnd --rs --respawn --transpile-only src/Blob.ts",
+    "watch:dev": "tsnd --rs --inspect --respawn --transpile-only -- src/Blob.ts"
   },
   "devDependencies": {
     "@types/node": "^16.4.10",

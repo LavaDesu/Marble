@@ -11,7 +11,7 @@ import {
 } from "ramune";
 import type { Score } from "ramune/lib/Responses";
 import { MessageEmbedOptions } from "slash-create";
-import { Marble } from "./Marble";
+import { Blob } from "./Blob";
 import { Collection } from "./Util/Collection";
 import { Store, StoreMap } from "./Store";
 import { asyncForEach, asyncMap } from "./Utils";
@@ -39,8 +39,8 @@ export class Tracker extends EventEmitter {
         }
     });
     private readonly webhook = {
-        id: Marble.Environment.webhookID,
-        token: Marble.Environment.webhookToken
+        id: Blob.Environment.webhookID,
+        token: Blob.Environment.webhookToken
     };
 
     /**
@@ -101,7 +101,7 @@ export class Tracker extends EventEmitter {
             const res = await map.league.players
                 .asyncMap(async player => {
                     try {
-                        return (await Marble.Instance.ramune.getBeatmapUserScore(
+                        return (await Blob.Instance.ramune.getBeatmapUserScore(
                             map.map.id.toString(),
                             player.osu.id.toString(),
                             {
@@ -135,7 +135,7 @@ export class Tracker extends EventEmitter {
         const lostScores: Score[] = [];
         await Store.Instance.getPlayers().asyncMap(async player => {
             const plays = this.allScores.getOrSet(player.osu.id, []);
-            const cursor = Marble.Instance.ramune.getUserScores(player.osu.id, ScoreType.Recent, Gamemode.Osu);
+            const cursor = Blob.Instance.ramune.getUserScores(player.osu.id, ScoreType.Recent, Gamemode.Osu);
             for await (const score of cursor.iterate(5)) {
                 if (plays.includes(score.id))
                     break;
@@ -165,7 +165,7 @@ export class Tracker extends EventEmitter {
         const playerScores = this.allScores.getOrSet(player, []);
 
         try {
-            const cursor = Marble.Instance.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu);
+            const cursor = Blob.Instance.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu);
             for await (const score of cursor.iterate(1)) {
                 if (playerScores.includes(score.id))
                     break;

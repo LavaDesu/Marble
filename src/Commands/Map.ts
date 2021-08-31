@@ -10,7 +10,7 @@ import {
     SlashCommand,
     SlashCreator
 } from "slash-create";
-import { Marble } from "../Marble";
+import { Blob } from "../Blob";
 import { Store, StoreMap, StoreWeek } from "../Store";
 
 export class MapCommand extends SlashCommand {
@@ -36,7 +36,7 @@ export class MapCommand extends SlashCommand {
 
     async run(ctx: CommandContext) {
         await ctx.defer();
-        Marble.Instance.componentQueue.add(ctx);
+        Blob.Instance.componentQueue.add(ctx);
 
         const map = ctx.options.id
             ? Store.Instance.getMap(ctx.options.id)
@@ -62,9 +62,9 @@ export class MapCommand extends SlashCommand {
     public async exec(ctx: CommandContext, map: StoreMap, debug: boolean = false) {
         const sender = Store.Instance.getPlayerByDiscord(ctx.user.id);
         if (sender)
-            await Marble.Instance.tracker.refreshPlayer(sender.osu.id);
+            await Blob.Instance.tracker.refreshPlayer(sender.osu.id);
 
-        const scores = Marble.Instance.tracker.getMapScores(map.map.id)?.valuesAsArray() ?? [];
+        const scores = Blob.Instance.tracker.getMapScores(map.map.id)?.valuesAsArray() ?? [];
 
         const fields: EmbedField[] = scores
             .filter(score => map.league.players.has(score.user!.id))

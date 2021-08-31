@@ -3,7 +3,7 @@ import type { Member } from "eris";
 import type { Beatmap, Beatmapset, Mod, ScoreRank, User as RamuneUser } from "ramune";
 import { asyncForEach } from "./Utils";
 import { Collection } from "./Util/Collection";
-import { Marble } from "./Marble";
+import { Blob } from "./Blob";
 
 interface Data {
     commandGuilds: string[];
@@ -62,7 +62,7 @@ export class Store {
     public async reload(): Promise<void> {
         const raw = await fs.readFile("./data.json", "utf8");
         const data: Data = JSON.parse(raw);
-        const guild = Marble.Instance.guilds.get(data.targetGuild);
+        const guild = Blob.Instance.guilds.get(data.targetGuild);
         if (!guild) throw new Error("missing guild");
 
         this.commandGuilds = data.commandGuilds;
@@ -84,7 +84,7 @@ export class Store {
 
             await asyncForEach(rawLeague.players, async player => {
                 let discord: Member | undefined;
-                if (Marble.Environment.development) {
+                if (Blob.Environment.development) {
                     console.log("[dev] discord user stub");
                     discord = guild.members.random();
                 } else
@@ -93,7 +93,7 @@ export class Store {
 
                 let osu;
                 try {
-                    osu = await Marble.Instance.ramune.getUser(player[1]);
+                    osu = await Blob.Instance.ramune.getUser(player[1]);
                 } catch(e) {
                     console.error("missing user", player[1], e);
                     return;
@@ -120,7 +120,7 @@ export class Store {
                     let map;
                     let beatmapset;
                     try {
-                        map = await Marble.Instance.ramune.getBeatmap(rawMap[0]);
+                        map = await Blob.Instance.ramune.getBeatmap(rawMap[0]);
                         beatmapset = await map.beatmapset!.eval();
                     } catch(e) {
                         console.error("missing map", rawMap[0], e);

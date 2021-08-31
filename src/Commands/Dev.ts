@@ -1,6 +1,6 @@
 import * as fs from "fs/promises";
 import { ApplicationCommandPermissionType, CommandContext, CommandOptionType, SlashCommand, SlashCreator } from "slash-create";
-import { Marble } from "../Marble";
+import { Blob } from "../Blob";
 import { Store } from "../Store";
 import { MapCommand } from "./Map";
 
@@ -54,12 +54,12 @@ export class Dev extends SlashCommand {
                 }
             ],
             defaultPermission: false,
-            guildIDs: Marble.Environment.devGuild,
+            guildIDs: Blob.Environment.devGuild,
             permissions: {
-                [Marble.Environment.devGuild]: [
+                [Blob.Environment.devGuild]: [
                     {
                         type: ApplicationCommandPermissionType.USER,
-                        id: Marble.Environment.devID,
+                        id: Blob.Environment.devID,
                         permission: true
                     }
                 ]
@@ -71,7 +71,7 @@ export class Dev extends SlashCommand {
         await ctx.defer();
 
         if (ctx.options.record) {
-            const isRecording = Marble.Instance.tracker.toggleRecord();
+            const isRecording = Blob.Instance.tracker.toggleRecord();
             console.log("record", isRecording);
             ctx.send(isRecording.toString());
         }
@@ -81,7 +81,7 @@ export class Dev extends SlashCommand {
             try {
                 const file = await fs.readFile(ctx.options.replay.file, "utf8");
                 const score = JSON.parse(file);
-                await Marble.Instance.tracker.process(score);
+                await Blob.Instance.tracker.process(score);
                 await ctx.send("replayed");
             } catch(e) {
                 console.error(e);
@@ -93,7 +93,7 @@ export class Dev extends SlashCommand {
             console.log("reload");
             try {
                 await Store.Instance.reload();
-                await Marble.Instance.tracker.syncScores();
+                await Blob.Instance.tracker.syncScores();
                 await ctx.send("a ok");
             } catch(e) {
                 console.error(e);
@@ -118,7 +118,7 @@ export class Dev extends SlashCommand {
         }
         if (ctx.options.clear) {
             console.log("clear comp queue");
-            await Marble.Instance.componentQueue.clear();
+            await Blob.Instance.componentQueue.clear();
             await ctx.send("cleared");
         }
     }

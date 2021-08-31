@@ -4,7 +4,7 @@ import {
     SlashCommand,
     SlashCreator
 } from "slash-create";
-import { Marble } from "../Marble";
+import { Blob } from "../Blob";
 import { Store } from "../Store";
 import { Collection } from "../Util/Collection";
 import { sanitiseDiscord } from "../Utils";
@@ -31,7 +31,7 @@ export class Leaderboards extends SlashCommand {
 
     async run(ctx: CommandContext) {
         await ctx.defer();
-        Marble.Instance.componentQueue.add(ctx);
+        Blob.Instance.componentQueue.add(ctx);
 
         await this.exec(ctx);
     }
@@ -44,9 +44,9 @@ export class Leaderboards extends SlashCommand {
         }
         const sender = Store.Instance.getPlayerByDiscord(ctx.user.id);
         if (sender)
-            await Marble.Instance.tracker.refreshPlayer(sender.osu.id);
+            await Blob.Instance.tracker.refreshPlayer(sender.osu.id);
 
-        const maps = Marble.Instance.tracker.getScores();
+        const maps = Blob.Instance.tracker.getScores();
 
         const points: Collection<string, number> = new Collection();
         maps.forEach(map => {

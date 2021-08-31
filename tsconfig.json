@@ -13,6 +13,6 @@
         "skipLibCheck": true,
         "sourceMap": true,
         "strict": true,
-        "tsBuildInfoFile": "./out/marble.tsbuildinfo"
+        "tsBuildInfoFile": "./out/blob.tsbuildinfo"
     }
 }

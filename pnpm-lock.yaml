@@ -7,14 +7,14 @@ specifiers:
   eris: ^0.15.1
   eslint: ^7.32.0
   eslint-plugin-import: ^2.23.4
-  ramune: github:LavaDesu/Ramune#0.0.6
+  ramune: github:LavaDesu/Ramune#0.0.8
   slash-create: ^3.4.1
   ts-node-dev: ^1.1.8
   typescript: ^4.3.5
 
 dependencies:
   eris: 0.15.1
-  ramune: github.com/LavaDesu/Ramune/174bd404ed2cc8bc5af21becb6b5abb6d89db126
+  ramune: github.com/LavaDesu/Ramune/e1598c61d248407cd4675db7bf0706df6e3ec0a5
   slash-create: 3.4.1
 
 devDependencies:
@@ -110,8 +110,8 @@ packages:
     resolution: {integrity: sha512-YSBPTLTVm2e2OoQIDYx8HaeWJ5tTToLH67kXR7zYNGupXMEHa2++G8k+DczX2cFVgalypqtyZIcU19AFcmOpmg==}
     dev: true
 
-  /@types/node/14.17.12:
-    resolution: {integrity: sha512-vhUqgjJR1qxwTWV5Ps5txuy2XMdf7Fw+OrdChRboy8BmWUPkckOhphaohzFG6b8DW7CrxaBMdrdJ47SYFq1okw==}
+  /@types/node/14.17.14:
+    resolution: {integrity: sha512-rsAj2u8Xkqfc332iXV12SqIsjVi07H479bOP4q94NAcjzmAvapumEhuVIt53koEf7JFrpjgNKjBga5Pnn/GL8A==}
     dev: false
 
   /@types/node/16.4.10:
@@ -1801,13 +1801,13 @@ packages:
     engines: {node: '>=6'}
     dev: true
 
-  github.com/LavaDesu/Ramune/174bd404ed2cc8bc5af21becb6b5abb6d89db126:
-    resolution: {tarball: https://codeload.github.com/LavaDesu/Ramune/tar.gz/174bd404ed2cc8bc5af21becb6b5abb6d89db126}
+  github.com/LavaDesu/Ramune/e1598c61d248407cd4675db7bf0706df6e3ec0a5:
+    resolution: {tarball: https://codeload.github.com/LavaDesu/Ramune/tar.gz/e1598c61d248407cd4675db7bf0706df6e3ec0a5}
     name: ramune
-    version: 0.0.6
+    version: 0.0.8
     engines: {node: '>=10.0.0'}
     requiresBuild: true
     dependencies:
-      '@types/node': 14.17.12
+      '@types/node': 14.17.14
       typescript: 4.3.5
     dev: false

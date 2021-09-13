@@ -1,5 +1,5 @@
 import { Guild, Invite, Member } from "eris";
-import { DiscordClient } from "../Discord";
+import { DiscordClient } from "./Discord";
 import { Component, ComponentLoad, Dependency } from "../DependencyInjection";
 import { Store } from "./Store";
 import { Collection } from "../Util/Collection";

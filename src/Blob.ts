@@ -7,7 +7,7 @@ import { DevCommand } from "./Commands/Dev";
 import { LeaderboardsCommand } from "./Commands/Leaderboards";
 import { MapCommand } from "./Commands/Map";
 import { PingCommand } from "./Commands/Ping";
-import { DiscordClient } from "./Discord";
+import { DiscordClient } from "./Components/Discord";
 import { Store } from "./Components/Store";
 import { LeagueTracker } from "./Components/LeagueTracker";
 import { InviteTracker } from "./Components/InviteTracker";

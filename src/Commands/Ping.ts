@@ -1,6 +1,6 @@
 import { CommandContext } from "slash-create";
 import { Component, Dependency } from "../DependencyInjection";
-import { Store } from "../Store";
+import { Store } from "../Components/Store";
 import { SlashCommandComponent } from "./SlashCommandComponent";
 
 @Component("Command/Ping")

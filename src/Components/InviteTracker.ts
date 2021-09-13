@@ -1,7 +1,7 @@
 import { Guild, Invite, Member } from "eris";
 import { DiscordClient } from "../Discord";
 import { Component, ComponentLoad, Dependency } from "../DependencyInjection";
-import { Store } from "../Store";
+import { Store } from "./Store";
 import { Collection } from "../Util/Collection";
 import { asyncForEach } from "../Utils";
 import { Logger } from "../Logger";

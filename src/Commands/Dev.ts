@@ -2,7 +2,7 @@ import * as fs from "fs/promises";
 import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } from "slash-create";
 import { Blob } from "../Blob";
 import { Component, Dependency } from "../DependencyInjection";
-import { Store } from "../Store";
+import { Store } from "../Components/Store";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { MapCommand } from "./Map";
 import { SlashCommandComponent } from "./SlashCommandComponent";

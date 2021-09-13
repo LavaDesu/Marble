@@ -15,7 +15,7 @@ import { MessageEmbedOptions } from "slash-create";
 
 import { Blob } from "../Blob";
 import { Collection } from "../Util/Collection";
-import { Store, StoreMap } from "../Store";
+import { Store, StoreMap } from "./Store";
 import { asyncForEach, asyncMap } from "../Utils";
 import { Component, ComponentLoad, Dependency } from "../DependencyInjection";
 import { Logger } from "../Logger";

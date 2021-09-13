@@ -1,7 +1,7 @@
 import { CommandContext, CommandOptionType } from "slash-create";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { Component, Dependency } from "../DependencyInjection";
-import { Store } from "../Store";
+import { Store } from "../Components/Store";
 import { Collection } from "../Util/Collection";
 import { sanitiseDiscord } from "../Utils";
 import { SlashCommandComponent } from "./SlashCommandComponent";

@@ -1,10 +1,10 @@
 import * as fs from "fs/promises";
 import type { Beatmap, Beatmapset, Mod, ScoreRank, User as RamuneUser } from "ramune";
 import { Ramune } from "ramune";
-import { asyncForEach } from "./Utils";
-import { Collection } from "./Util/Collection";
-import { Component, ComponentLoad, Dependency } from "./DependencyInjection";
-import { Logger } from "./Logger";
+import { asyncForEach } from "../Utils";
+import { Collection } from "../Util/Collection";
+import { Component, ComponentLoad, Dependency } from "../DependencyInjection";
+import { Logger } from "../Logger";
 
 interface Data {
     commandGuilds: string[];

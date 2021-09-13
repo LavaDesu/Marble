@@ -10,7 +10,7 @@ import {
 } from "slash-create";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { Component, Dependency } from "../DependencyInjection";
-import { Store, StoreMap, StoreWeek } from "../Store";
+import { Store, StoreMap, StoreWeek } from "../Components/Store";
 import { SlashCommandComponent } from "./SlashCommandComponent";
 
 @Component("Command/Map")

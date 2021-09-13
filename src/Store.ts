@@ -1,8 +1,10 @@
 import * as fs from "fs/promises";
 import type { Beatmap, Beatmapset, Mod, ScoreRank, User as RamuneUser } from "ramune";
+import { Ramune } from "ramune";
 import { asyncForEach } from "./Utils";
 import { Collection } from "./Util/Collection";
-import { Blob } from "./Blob";
+import { Component, ComponentLoad, Dependency } from "./DependencyInjection";
+import { Logger } from "./Logger";
 
 interface Data {
     commandGuilds: string[];
@@ -45,8 +47,9 @@ export interface OperatorOR {
 }
 export type OperatorNode = OperatorOR | Mod | Mod[];
 
-export class Store {
-    public static Instance: Store;
+@Component("Store")
+export class Store implements Component {
+    private readonly logger = new Logger("Store");
 
     private commandGuilds: string[] = [];
     private inviteTracking: InviteTrackingSettings = { guilds: {} };
@@ -57,11 +60,11 @@ export class Store {
     private readonly players: Collection<number, StorePlayer> = new Collection();
     private readonly discordPlayers: Collection<string, StorePlayer> = new Collection();
 
-    constructor() {
-        Store.Instance = this;
-    }
+    @Dependency
+    private readonly ramune!: Ramune;
 
-    public async reload(): Promise<void> {
+    @ComponentLoad
+    public async load(): Promise<void> {
         const raw = await fs.readFile("./data.json", "utf8");
         const data: Data = JSON.parse(raw);
 
@@ -86,9 +89,9 @@ export class Store {
             await asyncForEach(rawLeague.players, async player => {
                 let osu;
                 try {
-                    osu = await Blob.Instance.ramune.getUser(player[1]);
+                    osu = await this.ramune.getUser(player[1]);
                 } catch(e) {
-                    console.error("missing user", player[1], e);
+                    this.logger.error("missing user", player[1], e);
                     return;
                 }
                 const res: StorePlayer = { league, osu };
@@ -113,14 +116,14 @@ export class Store {
                     let map;
                     let beatmapset;
                     try {
-                        map = await Blob.Instance.ramune.getBeatmap(rawMap[0]);
+                        map = await this.ramune.getBeatmap(rawMap[0]);
                         beatmapset = await map.beatmapset!.eval();
                     } catch(e) {
-                        console.error("missing map", rawMap[0], e);
+                        this.logger.error("missing map", rawMap[0], e);
                         return;
                     }
                     if (!beatmapset) {
-                        console.error("missing beatmapset", rawMap[0]);
+                        this.logger.error("missing beatmapset", rawMap[0]);
                         return;
                     }
 
@@ -134,14 +137,13 @@ export class Store {
                 });
             });
         }
-        console.log("Data loaded");
     }
 
     public getFriendlyMods(mapID: number): string {
         const map = this.maps.get(mapID);
 
         if (!map) {
-            console.error("missing map!", mapID);
+            this.logger.error("missing map!", mapID);
             return "";
         }
 

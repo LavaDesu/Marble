@@ -1,12 +1,23 @@
 import * as fs from "fs/promises";
-import { ApplicationCommandPermissionType, CommandContext, CommandOptionType, SlashCommand, SlashCreator } from "slash-create";
+import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } from "slash-create";
 import { Blob } from "../Blob";
+import { Component, Dependency } from "../DependencyInjection";
 import { Store } from "../Store";
+import { LeagueTracker } from "../Components/LeagueTracker";
 import { MapCommand } from "./Map";
+import { SlashCommandComponent } from "./SlashCommandComponent";
+import { Logger } from "../Logger";
 
-export class Dev extends SlashCommand {
-    constructor(creator: SlashCreator) {
-        super(creator, {
+@Component("Command/Dev")
+export class DevCommand extends SlashCommandComponent {
+    private readonly logger = new Logger("Command/Dev");
+
+    @Dependency private readonly mapCommand!: MapCommand;
+    @Dependency private readonly store!: Store;
+    @Dependency private readonly tracker!: LeagueTracker;
+
+    load() {
+        super.create({
             name: "dev",
             description: "dev commands :)",
             options: [
@@ -71,32 +82,32 @@ export class Dev extends SlashCommand {
         await ctx.defer();
 
         if (ctx.options.record) {
-            const isRecording = Blob.Instance.tracker.toggleRecord();
-            console.log("record", isRecording);
+            const isRecording = this.tracker.toggleRecord();
+            this.logger.info("record", isRecording);
             ctx.send(isRecording.toString());
         }
 
         if (ctx.options.replay) {
-            console.log("replay", ctx.options.replay.file);
+            this.logger.info("replay", ctx.options.replay.file);
             try {
                 const file = await fs.readFile(ctx.options.replay.file, "utf8");
                 const score = JSON.parse(file);
-                await Blob.Instance.tracker.process(score);
+                await this.tracker.process(score);
                 await ctx.send("replayed");
             } catch(e) {
-                console.error(e);
+                this.logger.error(e);
                 ctx.send("error :( check console");
             }
         }
 
         if (ctx.options.reload) {
-            console.log("reload");
+            this.logger.info("reload");
             try {
-                await Store.Instance.reload();
-                await Blob.Instance.tracker.syncScores();
+                await this.store.load();
+                await this.tracker.syncScores();
                 await ctx.send("a ok");
             } catch(e) {
-                console.error(e);
+                this.logger.error(e);
                 ctx.send("error :( check console");
             }
         }
@@ -104,11 +115,11 @@ export class Dev extends SlashCommand {
         if (ctx.options.dump) {
             await ctx.send("brrr");
 
-            const maps = Store.Instance.getLeagues().map(league =>
+            const maps = this.store.getLeagues().map(league =>
                 league.weeks.map(week => week.maps.valuesAsArray())
             ).flat(2);
             for (const m of maps)
-                await MapCommand.Instance.exec(ctx, m, true);
+                await this.mapCommand.exec(ctx, m, true);
             return;
         }
 
@@ -117,8 +128,8 @@ export class Dev extends SlashCommand {
             await ctx.send("eval");
         }
         if (ctx.options.clear) {
-            console.log("clear comp queue");
-            await Blob.Instance.componentQueue.clear();
+            this.logger.info("clear comp queue");
+            // await Blob.Instance.componentQueue.clear();
             await ctx.send("cleared");
         }
     }

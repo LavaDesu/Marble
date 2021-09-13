@@ -4,6 +4,7 @@ import { EventEmitter } from "events";
 import {
     BeatmapLeaderboardScope,
     Gamemode,
+    Ramune,
     RequestNetworkError,
     RequestHandler,
     RequestType,
@@ -11,26 +12,29 @@ import {
 } from "ramune";
 import type { Score } from "ramune/lib/Responses";
 import { MessageEmbedOptions } from "slash-create";
-import { Blob } from "./Blob";
-import { Collection } from "./Util/Collection";
-import { Store, StoreMap } from "./Store";
-import { asyncForEach, asyncMap } from "./Utils";
+
+import { Blob } from "../Blob";
+import { Collection } from "../Util/Collection";
+import { Store, StoreMap } from "../Store";
+import { asyncForEach, asyncMap } from "../Utils";
+import { Component, ComponentLoad, Dependency } from "../DependencyInjection";
+import { Logger } from "../Logger";
 
 export interface TrackerEvents<T> {
     (event: "newScore", listener: (score: Score) => void): T;
 }
-export interface Tracker {
+export interface LeagueTracker {
     on: TrackerEvents<this>;
     once: TrackerEvents<this>;
 }
-export class Tracker extends EventEmitter {
+@Component("Tracker/League")
+export class LeagueTracker extends EventEmitter implements Component {
+    private readonly logger = new Logger("Tracker/League");
+
+    @Dependency private readonly ramune!: Ramune;
+    @Dependency private readonly store!: Store;
+
     private trackTimer?: NodeJS.Timer;
-    /**
-     * This collection is used to track all scores; it stores all recent plays of a user
-     * and used to detect new recent plays
-     * format: Collection<PlayerID, ScoreID>
-     */
-    private readonly allScores: Collection<number, number[]>;
     private readonly requestHandler = new RequestHandler({
         defaultHost: "discord.com",
         rateLimit: {
@@ -43,12 +47,19 @@ export class Tracker extends EventEmitter {
         token: Blob.Environment.webhookToken
     };
 
+    private recording: boolean;
+
+    /**
+     * This collection is used to track all scores; it stores all recent plays of a user
+     * and used to detect new recent plays
+     * format: Collection<PlayerID, ScoreID>
+     */
+    private readonly allScores: Collection<number, number[]>;
     /**
      * This collection is used to track the user's top scores per map.
      * format: Collection<MapID, Collection<PlayerID, Score>>
      */
     private readonly scores: Collection<number, Collection<number, Score>>;
-    private recording: boolean;
 
     constructor() {
         super();
@@ -57,7 +68,8 @@ export class Tracker extends EventEmitter {
         this.recording = true;
     }
 
-    async init() {
+    @ComponentLoad
+    async load() {
         if (this.trackTimer)
             clearInterval(this.trackTimer);
 
@@ -65,7 +77,6 @@ export class Tracker extends EventEmitter {
         await this.syncScores();
         await this.replayScores();
         await this.updateScores();
-        return;
     }
 
     public getScore(map: number, player: number) {
@@ -95,13 +106,13 @@ export class Tracker extends EventEmitter {
     }
 
     public async syncScores() {
-        await Store.Instance.getMaps().asyncMap(async map => {
+        await this.store.getMaps().asyncMap(async map => {
             if (!map.map.isScorable) return;
 
             const res = await map.league.players
                 .asyncMap(async player => {
                     try {
-                        return (await Blob.Instance.ramune.getBeatmapUserScore(
+                        return (await this.ramune.getBeatmapUserScore(
                             map.map.id.toString(),
                             player.osu.id.toString(),
                             {
@@ -116,7 +127,7 @@ export class Tracker extends EventEmitter {
                         )
                             return;
 
-                        console.error(`Failed fetching scores of ${player.osu.id} during sync`, error);
+                        this.logger.error(`Failed fetching scores of ${player.osu.id} during sync`, error);
                         return;
                     }
                 });
@@ -131,11 +142,11 @@ export class Tracker extends EventEmitter {
     }
 
     private async updateScores() {
-        console.log("Checking for lost scores");
+        this.logger.info("Checking for lost scores");
         const lostScores: Score[] = [];
-        await Store.Instance.getPlayers().asyncMap(async player => {
+        await this.store.getPlayers().asyncMap(async player => {
             const plays = this.allScores.getOrSet(player.osu.id, []);
-            const cursor = Blob.Instance.ramune.getUserScores(player.osu.id, ScoreType.Recent, Gamemode.Osu);
+            const cursor = this.ramune.getUserScores(player.osu.id, ScoreType.Recent, Gamemode.Osu);
             for await (const score of cursor.iterate(5)) {
                 if (plays.includes(score.id))
                     break;
@@ -144,15 +155,15 @@ export class Tracker extends EventEmitter {
             }
         });
         if (!lostScores.length) {
-            console.log("No scores to recover");
+            this.logger.info("No scores to recover");
             return;
         }
-        console.log(`Recovering ${lostScores.length} lost scores`);
+        this.logger.info(`Recovering ${lostScores.length} lost scores`);
         await asyncMap(lostScores, async score => await this.process(score));
     }
 
     private async refresh() {
-        const res = await Store.Instance.getPlayers().asyncMap(async player => await this.refreshPlayer(player.osu.id, false));
+        const res = await this.store.getPlayers().asyncMap(async player => await this.refreshPlayer(player.osu.id, false));
         const scores = res
             .flat(1)
             .sort((a, b) => a.id - b.id);
@@ -165,7 +176,7 @@ export class Tracker extends EventEmitter {
         const playerScores = this.allScores.getOrSet(player, []);
 
         try {
-            const cursor = Blob.Instance.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu);
+            const cursor = this.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu);
             for await (const score of cursor.iterate(1)) {
                 if (playerScores.includes(score.id))
                     break;
@@ -173,7 +184,7 @@ export class Tracker extends EventEmitter {
                 scores.push(score);
             }
         } catch(e) {
-            console.error("Error getting user scores", player, e);
+            this.logger.error("Error getting user scores", player, e);
             return [];
         }
 
@@ -193,8 +204,8 @@ export class Tracker extends EventEmitter {
             await writeFile(`./scores/${score.id}.json`, JSON.stringify(score, undefined, 4));
 
         // Check 1: Does the map exist in the player's league?
-        const league = Store.Instance.getPlayer(score.user_id)?.league;
-        const map = Store.Instance.getMap(score.beatmap!.id);
+        const league = this.store.getPlayer(score.user_id)?.league;
+        const map = this.store.getMap(score.beatmap!.id);
         if (!map || map.league !== league) return;
 
         // Check 2: Is this score higher than the previous score?
@@ -203,13 +214,13 @@ export class Tracker extends EventEmitter {
         if (previousScore && previousScore.score > score.score) return;
 
         // Check 3: Does the score have the necessary mods?
-        if (!Store.Instance.testMods(map.map.id, score.mods))
+        if (!this.store.testMods(map.map.id, score.mods))
             return;
 
         scores.set(score.user_id, score);
 
         if (shouldPost) {
-            console.log(`Processing: ${score.id} - ${score.best_id}`);
+            this.logger.info(`Processing: ${score.id} - ${score.best_id}`);
             this.post(map, score);
         }
         return;
@@ -231,7 +242,7 @@ export class Tracker extends EventEmitter {
                 `League = ${map.league.name}`,
                 `Week = ${map.week.number}`,
                 `Map ID = ${beatmap.id}`,
-                `Required Mods = ${Store.Instance.getFriendlyMods(beatmap.id)}`
+                `Required Mods = ${this.store.getFriendlyMods(beatmap.id)}`
             ].join("\n"),
             fields: [
                 {
@@ -239,7 +250,7 @@ export class Tracker extends EventEmitter {
                     value: [
                         `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
                         `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
-                        `Rank: ${Store.Instance.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
+                        `Rank: ${this.store.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
                         `Combo: **${score.max_combo}**/${map.map.maxCombo?.toString() ?? "0"}x`,
                         score.best_id ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})` : undefined
                     ].filter(i => i !== undefined).join("\n")

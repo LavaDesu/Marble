@@ -1,17 +1,19 @@
-import {
-    CommandContext,
-    SlashCommand,
-    SlashCreator
-} from "slash-create";
+import { CommandContext } from "slash-create";
+import { Component, Dependency } from "../DependencyInjection";
 import { Store } from "../Store";
+import { SlashCommandComponent } from "./SlashCommandComponent";
 
-export class Ping extends SlashCommand {
-    constructor(creator: SlashCreator) {
-        super(creator, {
+@Component("Command/Ping")
+export class PingCommand extends SlashCommandComponent {
+    @Dependency
+    private readonly store!: Store;
+
+    load() {
+        super.create({
             name: "ping",
             description: "classic ping pong test thingy",
             defaultPermission: true,
-            guildIDs: Store.Instance.getCommandGuilds()
+            guildIDs: this.store.getCommandGuilds()
         });
     }
 

@@ -8,6 +8,7 @@ specifiers:
   eslint: ^7.32.0
   eslint-plugin-import: ^2.23.4
   ramune: github:LavaDesu/Ramune#0.0.8
+  reflect-metadata: ^0.1.13
   slash-create: ^3.4.1
   ts-node-dev: ^1.1.8
   typescript: ^4.3.5
@@ -15,6 +16,7 @@ specifiers:
 dependencies:
   eris: 0.15.1
   ramune: github.com/LavaDesu/Ramune/e1598c61d248407cd4675db7bf0706df6e3ec0a5
+  reflect-metadata: 0.1.13
   slash-create: 3.4.1
 
 devDependencies:
@@ -1385,6 +1387,10 @@ packages:
     dependencies:
       picomatch: 2.3.0
     dev: true
+
+  /reflect-metadata/0.1.13:
+    resolution: {integrity: sha512-Ts1Y/anZELhSsjMcU605fU9RE4Oi3p5ORujwbIKXfWa+0Zxs510Qrmrce5/Jowq3cHSZSJqBjypxmHarc+vEWg==}
+    dev: false
 
   /regexpp/3.2.0:
     resolution: {integrity: sha512-pq2bWo9mVD43nbts2wGv17XLiNLya+GklZ8kaDLV2Z08gDCsGpnKn9BFMepvWuHCbyVvY7J5o5+BVvoQbmlJLg==}

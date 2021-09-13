@@ -25,6 +25,7 @@
   "dependencies": {
     "eris": "^0.15.1",
     "ramune": "github:LavaDesu/Ramune#0.0.8",
+    "reflect-metadata": "^0.1.13",
     "slash-create": "^3.4.1"
   }
 }

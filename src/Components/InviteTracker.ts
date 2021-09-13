@@ -1,10 +1,21 @@
 import { Guild, Invite, Member } from "eris";
-import { Blob } from "./Blob";
-import { Store } from "./Store";
-import { Collection } from "./Util/Collection";
-import { asyncForEach } from "./Utils";
+import { DiscordClient } from "../Discord";
+import { Component, ComponentLoad, Dependency } from "../DependencyInjection";
+import { Store } from "../Store";
+import { Collection } from "../Util/Collection";
+import { asyncForEach } from "../Utils";
+import { Logger } from "../Logger";
 
-export class InviteTracker {
+@Component("Tracker/Invite")
+export class InviteTracker implements Component {
+    private readonly logger = new Logger("Tracker/Invite");
+
+    @Dependency
+    private readonly discord!: DiscordClient;
+
+    @Dependency
+    private readonly store!: Store;
+
     /** format: Collection<GuildID, Collection<InviteCode, InviteUses>> */
     private readonly invites: Collection<string, Collection<string, number>>;
 
@@ -12,48 +23,49 @@ export class InviteTracker {
         this.invites = new Collection();
     }
 
-    public async init() {
-        const settings = Store.Instance.getInviteTrackingSettings();
+    @ComponentLoad
+    public async load() {
+        const settings = this.store.getInviteTrackingSettings();
         const guildIDs = Object.keys(settings.guilds);
 
         let inviteCount = 0;
         await asyncForEach(guildIDs, async guildID => {
-            const guild = Blob.Instance.guilds.get(guildID);
+            const guild = this.discord.guilds.get(guildID);
             if (!guild)
-                return console.error("unknown guild id", guildID);
+                return this.logger.error("unknown guild id", guildID);
 
             const localInvites = this.invites.getOrSet(guildID, new Collection());
             const invites = await guild.getInvites();
             invites.forEach(invite => localInvites.set(invite.code, invite.uses));
             inviteCount += invites.length;
         });
-        console.log(`Loaded ${inviteCount} invites from ${guildIDs.length} guilds`);
+        this.logger.info(`Loaded ${inviteCount} invites from ${guildIDs.length} guilds`);
 
-        Blob.Instance.on("guildMemberAdd", this.handleMemberAdd.bind(this));
-        Blob.Instance.on("inviteCreate", this.handleInviteAdd.bind(this));
-        Blob.Instance.on("inviteDelete", this.handleInviteDel.bind(this));
+        this.discord.on("guildMemberAdd", this.handleMemberAdd.bind(this));
+        this.discord.on("inviteCreate", this.handleInviteAdd.bind(this));
+        this.discord.on("inviteDelete", this.handleInviteDel.bind(this));
     }
 
     private async handleMemberAdd(guild: Guild, member: Member) {
-        const settings = Store.Instance.getInviteTrackingSettings();
+        const settings = this.store.getInviteTrackingSettings();
 
         if (!(guild.id in settings.guilds))
             return;
 
         const invites = this.invites.get(guild.id);
         if (!invites)
-            return console.error("missing invites?", guild.id, member.id);
+            return this.logger.error("missing invites?", guild.id, member.id);
 
         const newInvites = await guild.getInvites();
         for (const invite of invites) {
             const currentInvite = newInvites.find(ni => ni.code === invite[0]);
             if (!currentInvite) {
-                console.error("missing current invite?", guild.id, invite[0]);
+                this.logger.error("missing current invite?", guild.id, invite[0]);
                 continue;
             }
             if (invite[1] !== currentInvite.uses) {
                 const inviter = currentInvite.inviter;
-                await Blob.Instance.createMessage(settings.guilds[guild.id], { embed: {
+                await this.discord.createMessage(settings.guilds[guild.id], { embed: {
                     title: "beep boop new member!",
                     thumbnail: { url: member.avatarURL },
                     fields: [

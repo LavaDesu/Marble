@@ -1,17 +1,21 @@
-import {
-    CommandContext,
-    CommandOptionType,
-    SlashCommand,
-    SlashCreator
-} from "slash-create";
-import { Blob } from "../Blob";
+import { CommandContext, CommandOptionType } from "slash-create";
+import { LeagueTracker } from "../Components/LeagueTracker";
+import { Component, Dependency } from "../DependencyInjection";
 import { Store } from "../Store";
 import { Collection } from "../Util/Collection";
 import { sanitiseDiscord } from "../Utils";
+import { SlashCommandComponent } from "./SlashCommandComponent";
 
-export class Leaderboards extends SlashCommand {
-    constructor(creator: SlashCreator) {
-        super(creator, {
+@Component("Command/Leaderboards")
+export class LeaderboardsCommand extends SlashCommandComponent {
+    @Dependency
+    private readonly store!: Store;
+
+    @Dependency
+    private readonly tracker!: LeagueTracker;
+
+    load() {
+        super.create({
             name: "lb",
             description: "Gets the current leaderboards per league",
             options: [
@@ -21,32 +25,32 @@ export class Leaderboards extends SlashCommand {
                     required: true,
                     type: CommandOptionType.STRING,
                     // XXX: Needs reload
-                    choices: Store.Instance.getLeagues().keysAsArray().map(name => ({ name, value: name }))
+                    choices: this.store.getLeagues().keysAsArray().map(name => ({ name, value: name }))
                 }
             ],
             defaultPermission: true,
-            guildIDs: Store.Instance.getCommandGuilds()
+            guildIDs: this.store.getCommandGuilds()
         });
     }
 
     async run(ctx: CommandContext) {
         await ctx.defer();
-        Blob.Instance.componentQueue.add(ctx);
+        // Blob.Instance.componentQueue.add(ctx);
 
         await this.exec(ctx);
     }
 
     private async exec(ctx: CommandContext) {
-        const league = Store.Instance.getLeague(ctx.options.league);
+        const league = this.store.getLeague(ctx.options.league);
         if (!league) {
             await ctx.editOriginal("Unknown league");
             return;
         }
-        const sender = Store.Instance.getPlayerByDiscord(ctx.user.id);
+        const sender = this.store.getPlayerByDiscord(ctx.user.id);
         if (sender)
-            await Blob.Instance.tracker.refreshPlayer(sender.osu.id);
+            await this.tracker.refreshPlayer(sender.osu.id);
 
-        const maps = Blob.Instance.tracker.getScores();
+        const maps = this.tracker.getScores();
 
         const points: Collection<string, number> = new Collection();
         maps.forEach(map => {

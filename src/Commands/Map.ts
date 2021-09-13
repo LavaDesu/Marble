@@ -6,18 +6,23 @@ import {
     ComponentType,
     EmbedField,
     MessageEmbedOptions,
-    MessageOptions,
-    SlashCommand,
-    SlashCreator
+    MessageOptions
 } from "slash-create";
-import { Blob } from "../Blob";
+import { LeagueTracker } from "../Components/LeagueTracker";
+import { Component, Dependency } from "../DependencyInjection";
 import { Store, StoreMap, StoreWeek } from "../Store";
+import { SlashCommandComponent } from "./SlashCommandComponent";
 
-export class MapCommand extends SlashCommand {
-    public static Instance: MapCommand;
+@Component("Command/Map")
+export class MapCommand extends SlashCommandComponent {
+    @Dependency
+    private readonly tracker!: LeagueTracker;
 
-    constructor(creator: SlashCreator) {
-        super(creator, {
+    @Dependency
+    private readonly store!: Store;
+
+    load() {
+        super.create({
             name: "map",
             description: "Gets the current country leaderboards for a map",
             options: [
@@ -29,17 +34,16 @@ export class MapCommand extends SlashCommand {
                 }
             ],
             defaultPermission: true,
-            guildIDs: Store.Instance.getCommandGuilds()
+            guildIDs: this.store.getCommandGuilds()
         });
-        MapCommand.Instance = this;
     }
 
     async run(ctx: CommandContext) {
         await ctx.defer();
-        Blob.Instance.componentQueue.add(ctx);
+        // Blob.Instance.componentQueue.add(ctx);
 
         const map = ctx.options.id
-            ? Store.Instance.getMap(ctx.options.id)
+            ? this.store.getMap(ctx.options.id)
             : await this.prompt(ctx);
         if (!map) {
             const msg: MessageOptions = {
@@ -60,11 +64,11 @@ export class MapCommand extends SlashCommand {
     }
 
     public async exec(ctx: CommandContext, map: StoreMap, debug: boolean = false) {
-        const sender = Store.Instance.getPlayerByDiscord(ctx.user.id);
+        const sender = this.store.getPlayerByDiscord(ctx.user.id);
         if (sender)
-            await Blob.Instance.tracker.refreshPlayer(sender.osu.id);
+            await this.tracker.refreshPlayer(sender.osu.id);
 
-        const scores = Blob.Instance.tracker.getMapScores(map.map.id)?.valuesAsArray() ?? [];
+        const scores = this.tracker.getMapScores(map.map.id)?.valuesAsArray() ?? [];
 
         const fields: EmbedField[] = scores
             .filter(score => map.league.players.has(score.user!.id))
@@ -74,7 +78,7 @@ export class MapCommand extends SlashCommand {
                 value: [
                     `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
                     `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
-                    `Rank: ${Store.Instance.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
+                    `Rank: ${this.store.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
                     `Combo: **${score.max_combo}**/${map.map.maxCombo!}x`,
                     `Set <t:${(new Date(score.created_at).getTime() / 1000).toString()}:R>`,
                     score.best_id ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})` : undefined
@@ -89,7 +93,7 @@ export class MapCommand extends SlashCommand {
                 `League = ${map.league.name}`,
                 `Week = ${map.week.number}`,
                 `Map ID = ${map.map.id}`,
-                `Required Mods = ${Store.Instance.getFriendlyMods(map.map.id)}`
+                `Required Mods = ${this.store.getFriendlyMods(map.map.id)}`
             ].join("\n"),
             fields: fields.slice(0, 3)
         };
@@ -136,8 +140,8 @@ export class MapCommand extends SlashCommand {
         const promise: Promise<StoreMap> = new Promise(r => resolve = r);
 
         // XXX: hardcoded Upper default
-        const player = Store.Instance.getPlayerByDiscord(ctx.user.id);
-        let league = player ? player.league : Store.Instance.getLeague("Upper")!;
+        const player = this.store.getPlayerByDiscord(ctx.user.id);
+        let league = player ? player.league : this.store.getLeague("Upper")!;
         let week: StoreWeek;
         let map: StoreMap;
 
@@ -148,7 +152,7 @@ export class MapCommand extends SlashCommand {
                 custom_id: "select_league",
                 min_values: 1,
                 max_values: 1,
-                options: Store.Instance.getLeagues().map(mapLeague => ({
+                options: this.store.getLeagues().map(mapLeague => ({
                     label: `${mapLeague.name} League`,
                     value: mapLeague.name,
                     default: league === mapLeague
@@ -195,7 +199,7 @@ export class MapCommand extends SlashCommand {
         });
 
         ctx.registerComponent("select_league", async selectCtx => {
-            league = Store.Instance.getLeague(selectCtx.values.join(""))!;
+            league = this.store.getLeague(selectCtx.values.join(""))!;
             await selectCtx.editParent({
                 embeds: [{
                     description: `League = ${league.name}`

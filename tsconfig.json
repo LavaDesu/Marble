@@ -6,6 +6,8 @@
         "module": "commonjs",
         "composite": true,
         "declaration": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
         "noImplicitAny": true,
         "noImplicitReturns": true,
         "outDir": "./out",

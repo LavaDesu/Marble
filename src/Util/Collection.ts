@@ -8,6 +8,10 @@ export class Collection<K, V> extends Map<K, V> {
         this.limit = limit ?? 0;
     }
 
+    clone(): Collection<K, V> {
+        return new Collection(this.entries());
+    }
+
     random(): { key: K; value: V } | null {
         if (!this.size)
             return null;

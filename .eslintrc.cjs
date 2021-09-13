@@ -78,6 +78,7 @@ module.exports = {
                 "format": null
             }
         ],
+        "@typescript-eslint/no-duplicate-imports": "warn",
         "@typescript-eslint/no-for-in-array": "error",
         "@typescript-eslint/no-shadow": ["error", { "hoist": "all" }],
         "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
@@ -108,7 +109,6 @@ module.exports = {
         "no-caller": "error",
         "no-cond-assign": "error",
         "no-duplicate-case": "error",
-        "no-duplicate-imports": "warn",
         "no-invalid-this": "error",
         "no-new-func": "error",
         "no-new-wrappers": "error",

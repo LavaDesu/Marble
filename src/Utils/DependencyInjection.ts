@@ -1,5 +1,5 @@
 import { Lock } from "ramune";
-import { Collection } from "./Util/Collection";
+import { Collection } from "./Collection";
 import { Logger } from "./Logger";
 
 type Constructor<T = unknown> = { new (...args: any[]): T };

@@ -1,5 +1,5 @@
 import { CommandContext, SlashCommand, SlashCommandOptions, SlashCreator } from "slash-create";
-import { Dependency } from "../DependencyInjection";
+import { Dependency } from "../Utils/DependencyInjection";
 
 export abstract class SlashCommandComponent {
     @Dependency

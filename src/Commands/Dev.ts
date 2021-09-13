@@ -1,12 +1,12 @@
 import * as fs from "fs/promises";
 import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } from "slash-create";
 import { Blob } from "../Blob";
-import { Component, Dependency } from "../DependencyInjection";
+import { Component, Dependency } from "../Utils/DependencyInjection";
 import { Store } from "../Components/Store";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { MapCommand } from "./Map";
 import { SlashCommandComponent } from "./SlashCommandComponent";
-import { Logger } from "../Logger";
+import { Logger } from "../Utils/Logger";
 
 @Component("Command/Dev")
 export class DevCommand extends SlashCommandComponent {

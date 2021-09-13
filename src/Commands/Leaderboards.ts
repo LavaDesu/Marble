@@ -1,9 +1,9 @@
 import { CommandContext, CommandOptionType } from "slash-create";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { Component, Dependency } from "../DependencyInjection";
+import { Component, Dependency } from "../Utils/DependencyInjection";
 import { Store } from "../Components/Store";
-import { Collection } from "../Util/Collection";
-import { sanitiseDiscord } from "../Utils";
+import { Collection } from "../Utils/Collection";
+import { sanitiseDiscord } from "../Utils/Helpers";
 import { SlashCommandComponent } from "./SlashCommandComponent";
 
 @Component("Command/Leaderboards")

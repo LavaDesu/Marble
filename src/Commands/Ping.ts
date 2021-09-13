@@ -1,5 +1,5 @@
 import { CommandContext } from "slash-create";
-import { Component, Dependency } from "../DependencyInjection";
+import { Component, Dependency } from "../Utils/DependencyInjection";
 import { Store } from "../Components/Store";
 import { SlashCommandComponent } from "./SlashCommandComponent";
 

@@ -1,4 +1,4 @@
-import { Blob } from "./Blob";
+import { Blob } from "../Blob";
 import { ReflectUtils } from "./DependencyInjection";
 
 export function UseLogger(name?: string) {

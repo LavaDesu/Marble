@@ -1,10 +1,10 @@
 import { Guild, Invite, Member } from "eris";
 import { DiscordClient } from "./Discord";
-import { Component, ComponentLoad, Dependency } from "../DependencyInjection";
+import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
 import { Store } from "./Store";
-import { Collection } from "../Util/Collection";
-import { asyncForEach } from "../Utils";
-import { Logger } from "../Logger";
+import { Collection } from "../Utils/Collection";
+import { asyncForEach } from "../Utils/Helpers";
+import { Logger } from "../Utils/Logger";
 
 @Component("Tracker/Invite")
 export class InviteTracker implements Component {

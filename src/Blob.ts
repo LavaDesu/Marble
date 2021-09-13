@@ -11,8 +11,8 @@ import { DiscordClient } from "./Components/Discord";
 import { Store } from "./Components/Store";
 import { LeagueTracker } from "./Components/LeagueTracker";
 import { InviteTracker } from "./Components/InviteTracker";
-import { Export, NeedsLoad, Provider } from "./DependencyInjection";
-import { Logger } from "./Logger";
+import { Export, NeedsLoad, Provider } from "./Utils/DependencyInjection";
+import { Logger } from "./Utils/Logger";
 
 import { version as VERSION } from "../package.json";
 

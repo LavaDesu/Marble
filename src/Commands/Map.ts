@@ -9,7 +9,7 @@ import {
     MessageOptions
 } from "slash-create";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { Component, Dependency } from "../DependencyInjection";
+import { Component, Dependency } from "../Utils/DependencyInjection";
 import { Store, StoreMap, StoreWeek } from "../Components/Store";
 import { SlashCommandComponent } from "./SlashCommandComponent";
 

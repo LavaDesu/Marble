@@ -2,9 +2,9 @@ import { Client, Constants as ErisConstants } from "eris";
 import { CommandContext, SlashCommand } from "slash-create";
 
 import { Blob } from "../Blob";
-import { Component, ComponentLoad } from "../DependencyInjection";
-import { Logger } from "../Logger";
-import { Queue } from "../Util/Queue";
+import { Component, ComponentLoad } from "../Utils/DependencyInjection";
+import { Logger } from "../Utils/Logger";
+import { Queue } from "../Utils/Queue";
 
 @Component("Discord")
 export class DiscordClient extends Client implements Component {

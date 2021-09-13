@@ -14,11 +14,11 @@ import type { Score } from "ramune/lib/Responses";
 import { MessageEmbedOptions } from "slash-create";
 
 import { Blob } from "../Blob";
-import { Collection } from "../Util/Collection";
+import { Collection } from "../Utils/Collection";
 import { Store, StoreMap } from "./Store";
-import { asyncForEach, asyncMap } from "../Utils";
-import { Component, ComponentLoad, Dependency } from "../DependencyInjection";
-import { Logger } from "../Logger";
+import { asyncForEach, asyncMap } from "../Utils/Helpers";
+import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
+import { Logger } from "../Utils/Logger";
 
 export interface TrackerEvents<T> {
     (event: "newScore", listener: (score: Score) => void): T;

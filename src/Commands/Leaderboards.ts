@@ -1,6 +1,7 @@
 import { CommandContext, CommandOptionType } from "slash-create";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { Component, Dependency } from "../Utils/DependencyInjection";
+import { DiscordClient } from "../Components/Discord";
 import { Store } from "../Components/Store";
 import { Collection } from "../Utils/Collection";
 import { sanitiseDiscord } from "../Utils/Helpers";
@@ -8,11 +9,9 @@ import { SlashCommandComponent } from "./SlashCommandComponent";
 
 @Component("Command/Leaderboards")
 export class LeaderboardsCommand extends SlashCommandComponent {
-    @Dependency
-    private readonly store!: Store;
-
-    @Dependency
-    private readonly tracker!: LeagueTracker;
+    @Dependency private readonly discord!: DiscordClient;
+    @Dependency private readonly store!: Store;
+    @Dependency private readonly tracker!: LeagueTracker;
 
     load() {
         super.create({
@@ -35,7 +34,7 @@ export class LeaderboardsCommand extends SlashCommandComponent {
 
     async run(ctx: CommandContext) {
         await ctx.defer();
-        // Blob.Instance.componentQueue.add(ctx);
+        this.discord.componentQueue.add(ctx);
 
         await this.exec(ctx);
     }

@@ -2,6 +2,7 @@ import * as fs from "fs/promises";
 import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } from "slash-create";
 import { Blob } from "../Blob";
 import { Component, Dependency } from "../Utils/DependencyInjection";
+import { DiscordClient } from "../Components/Discord";
 import { Store } from "../Components/Store";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { MapCommand } from "./Map";
@@ -12,6 +13,7 @@ import { Logger } from "../Utils/Logger";
 export class DevCommand extends SlashCommandComponent {
     private readonly logger = new Logger("Command/Dev");
 
+    @Dependency private readonly discord!: DiscordClient;
     @Dependency private readonly mapCommand!: MapCommand;
     @Dependency private readonly store!: Store;
     @Dependency private readonly tracker!: LeagueTracker;
@@ -129,7 +131,7 @@ export class DevCommand extends SlashCommandComponent {
         }
         if (ctx.options.clear) {
             this.logger.info("clear comp queue");
-            // await Blob.Instance.componentQueue.clear();
+            await this.discord.componentQueue.clear();
             await ctx.send("cleared");
         }
     }

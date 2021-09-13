@@ -8,6 +8,7 @@ import {
     MessageEmbedOptions,
     MessageOptions
 } from "slash-create";
+import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { Component, Dependency } from "../Utils/DependencyInjection";
 import { Store, StoreMap, StoreWeek } from "../Components/Store";
@@ -15,11 +16,9 @@ import { SlashCommandComponent } from "./SlashCommandComponent";
 
 @Component("Command/Map")
 export class MapCommand extends SlashCommandComponent {
-    @Dependency
-    private readonly tracker!: LeagueTracker;
-
-    @Dependency
-    private readonly store!: Store;
+    @Dependency private readonly discord!: DiscordClient;
+    @Dependency private readonly store!: Store;
+    @Dependency private readonly tracker!: LeagueTracker;
 
     load() {
         super.create({
@@ -40,7 +39,7 @@ export class MapCommand extends SlashCommandComponent {
 
     async run(ctx: CommandContext) {
         await ctx.defer();
-        // Blob.Instance.componentQueue.add(ctx);
+        this.discord.componentQueue.add(ctx);
 
         const map = ctx.options.id
             ? this.store.getMap(ctx.options.id)

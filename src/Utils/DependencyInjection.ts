@@ -166,6 +166,7 @@ export interface Provider {
     getDependency<T>(dep: Constructable<T>): T | undefined;
     load?(): void | Promise<void>;
     markReady(component: Constructable): void;
+    unload(): void | Promise<void>;
     unloadComponent(component: Constructable): void;
 }
 export function Provider<T extends Constructor<any>>(Base: T) {
@@ -247,22 +248,37 @@ export function Provider<T extends Constructor<any>>(Base: T) {
         }
 
         async unloadComponent(constructor: Constructable<Component>) {
+            const component = this.getDependency(constructor);
+            if (!component)
+                return;
+
             logger.debug(`Preparing to unload ${constructor.name}`);
-            const component = this.getDependency(constructor)!;
+
             const depts = ReflectUtils.getCollection("Dependants", component);
 
-            await depts.asyncMap(async (_key, dep: Constructable<Component>) => {
-                let depName: string = ReflectUtils.get("Name", dep)!;
-
-                if (!depName)
-                    depName = dep.name;
-
+            for (const [dep] of depts)
                 await this.unloadComponent(dep);
-            });
 
             logger.debug(`Unloading ${constructor.name as string}`);
             await component?.unload?.();
+
+            const exports = ReflectUtils.getCollection("Exports", Base);
+            exports.delete(constructor);
+            ReflectUtils.setCollection("Exports", exports, Base);
+
             logger.debug(`Unloaded ${constructor.name as string}`);
+        }
+
+        async unload() {
+            logger.debug(`Preparing to unload provider ${Base.name}`);
+
+            for (const [constructor] of ReflectUtils.getCollection("Exports", Base))
+                await this.unloadComponent(constructor);
+
+            logger.debug(`Unloading provider ${Base.name}`);
+            await super.unload?.();
+
+            logger.debug(`Unloaded provider ${Base.name}`);
         }
     };
 }

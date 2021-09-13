@@ -115,6 +115,11 @@ export class Blob {
             this.logger.info("Ready~");
         });
     }
+
+    async unload() {
+        this.slashInstance.syncCommands();
+        await new Promise<void>(r => this.slashInstance.once("synced", r));
+    }
 }
 
 const provider = new Blob();
@@ -124,22 +129,20 @@ const provider = new Blob();
         provider.logger.info("Exiting via", signal);
 
         setTimeout(() => {
-            provider.logger.warn("Forced exit after timeout (5 seconds)");
+            provider.logger.warn("Forced exit after timeout (10 seconds)");
             process.exit();
-        }, 5e3);
+        }, 10e3);
 
-        const discord = provider.getDependency(DiscordClient)!;
-        const slashInstance = provider.getDependency(SlashCreator)!;
-        discord.editStatus("offline");
-        discord.commands.forEach(cmd => slashInstance.unregisterCommand(cmd));
-        await discord.componentQueue.clear();
-        // HACK: grace period for status edit to work
-        await new Promise(r => setTimeout(r, 1e3));
-
-        discord.once("disconnect", () => {
-            provider.logger.info("Disconnected. Goodbye!");
-            process.exit();
-        });
-        discord.disconnect({ reconnect: false });
+        await provider.unload();
+        const uptime = process.uptime();
+        const uptimeString = [
+            Math.floor(uptime / 60 / 60 / 24),
+            Math.floor(uptime % (60 * 60 * 24) / 60 / 60),
+            Math.floor(uptime % (60 * 60) / 60),
+            Math.floor(uptime % 60)
+        ].map(t => t.toString().padStart(2, "0")).join(":");
+        provider.logger.info("Goodbye!");
+        provider.logger.info("Uptime: " + uptimeString);
+        process.exit();
     })
 );

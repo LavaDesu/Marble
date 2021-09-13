@@ -11,7 +11,6 @@ export class DiscordClient extends Client implements Component {
     private readonly logger = new Logger("Discord");
 
     public componentQueue!: Queue<CommandContext>;
-    public commands!: SlashCommand[];
 
     constructor() {
         super(Blob.Environment.botToken, {
@@ -26,7 +25,6 @@ export class DiscordClient extends Client implements Component {
 
     @ComponentLoad
     public async load(): Promise<void> {
-        this.commands = [];
         this.componentQueue = new Queue(ctx => {
             if (ctx.messageID) try {
                 // Using allowedMention here to clear the components safely, as in
@@ -42,5 +40,17 @@ export class DiscordClient extends Client implements Component {
         this.connect();
         await p;
         this.editStatus("idle");
+    }
+
+    public async unload() {
+        this.editStatus("offline");
+        await this.componentQueue.clear();
+        // HACK: grace period for status edit to work
+        await new Promise(r => setTimeout(r, 1e3));
+
+        const p = new Promise(r => this.once("disconnect", r));
+        this.disconnect({ reconnect: false });
+        await p;
+        this.logger.info("disconnected");
     }
 }

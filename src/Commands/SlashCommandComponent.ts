@@ -22,7 +22,6 @@ export abstract class SlashCommandComponent {
 
     unload() {
         this.slashInstance.unregisterCommand(this.command);
-        this.slashInstance.syncCommands();
     }
 
     protected abstract run(ctx: CommandContext): Promise<any>;

@@ -204,19 +204,16 @@ export function Provider<T extends Constructor<any>>(Base: T) {
 
             const deps = ReflectUtils.getCollection("Dependencies", constructor);
             await deps.asyncMap(async (key, dep) => {
-                const dependency = this.getDependency(dep)!;
+                const dependency = this.getDependency(dep);
+
+                const depName: string = ReflectUtils.get("Name", dep) ?? dep.name;
+
+                if (!dependency)
+                    throw new Error(`Missing dependency ${depName} ${key ? `for ${key} ` : ""}in ${ReflectUtils.get("Name", constructor)!}`);
 
                 const depDepandants = ReflectUtils.getCollection("Dependants", dependency);
                 depDepandants.set(component.constructor, key);
                 ReflectUtils.setCollection("Dependants", depDepandants, dependency);
-
-                let depName: string = ReflectUtils.get("Name", dep)!;
-
-                if (!depName)
-                    depName = dep.name;
-
-                if (!dependency)
-                    throw new Error(`Missing dependency ${depName} for ${key} in ${ReflectUtils.get("Name", constructor)!}`);
 
                 const internalLocks = ReflectUtils.getCollection("LoadPromise", Base);
                 const depLock = ReflectUtils.get("RequiresLoad", dep);
@@ -261,21 +258,23 @@ export function Provider<T extends Constructor<any>>(Base: T) {
             if (!component)
                 return;
 
-            logger.debug(`Preparing to unload ${constructor.name}`);
+            const name: string = ReflectUtils.get("Name", constructor) ?? constructor.name;
+
+            logger.debug(`Preparing to unload ${name}`);
 
             const depts = ReflectUtils.getCollection("Dependants", component);
 
             for (const [dep] of depts)
                 await this.unloadComponent(dep);
 
-            logger.debug(`Unloading ${constructor.name as string}`);
-            await component?.unload?.();
+            logger.debug(`Unloading ${name}`);
+            await component.unload?.();
 
             const exports = ReflectUtils.getCollection("Exports", Base);
             exports.delete(constructor);
             ReflectUtils.setCollection("Exports", exports, Base);
 
-            logger.debug(`Unloaded ${constructor.name as string}`);
+            logger.debug(`Unloaded ${name}`);
         }
 
         async unload() {

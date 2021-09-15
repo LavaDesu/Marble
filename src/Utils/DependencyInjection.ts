@@ -13,6 +13,7 @@ type MetadataMap = {
     DesignReturnType: Constructable;
     Dependants: Collection<Constructable<Component>, string>;
     Dependencies: Collection<Constructable<Component>, string>;
+    LooseDependencies: Collection<Constructable<Component>, string | undefined>;
     Exports: Collection<Constructable<Component>, string>;
     LoadPromise: Collection<Constructable<Component>, Lock>;
     Name: string;
@@ -26,6 +27,7 @@ type MetadataTargetMap = {
     DesignReturnType: Component;
     Dependants: Component;
     Dependencies: Constructable<Component>;
+    LooseDependencies: Constructable<Component>;
     Exports: Constructable<Provider>;
     LoadPromise: Constructable<Provider>;
     Name: Constructable<Component>;
@@ -39,6 +41,7 @@ const MetadataSymbols = {
     DesignReturnType: "design:returntype",
     Dependants: Symbol("dependants"),
     Dependencies: Symbol("dependencies"),
+    LooseDependencies: Symbol("looseDependencies"),
     Exports: Symbol("exports"),
     LoadPromise: Symbol("loadPromise"),
     Name: Symbol("name"),
@@ -115,32 +118,20 @@ export function ComponentLoad(target: Component, key: string, _descriptor: Prope
     ReflectUtils.define("RequiresLoad", lock, target.constructor);
 }
 
-export function Dependency(target: Component, key: string): void {
+export function Dependency(target: Component, key: string) {
     const depConstructor = ReflectUtils.get("DesignType", target, key)!;
 
     const deps = ReflectUtils.getCollection("Dependencies", target.constructor);
     deps.set(depConstructor, key);
     ReflectUtils.setCollection("Dependencies", deps, target.constructor);
+}
 
-    /* Old accessor-based on-demand dependency receiving
-    descriptor.get = function(this: Component) {
-        const provider = ReflectUtils.get("Provider", Object.getPrototypeOf(this));
-        if (!provider)
-            throw new Error(`No provider for ${Object.getPrototypeOf(this).name as string}!`);
+export function LooseDependency(target: Component, key: string) {
+    const depConstructor = ReflectUtils.get("DesignType", target, key)!;
 
-        const dep = provider.getDependency(depConstructor);
-
-        let depName: string = depConstructor.name;
-
-        if ((dep as any)?.isComponent)
-            depName = Object.getPrototypeOf(dep).name;
-
-        if (!dep)
-            throw new Error(`Missing dependency ${depName} for ${key} in ${Object.getPrototypeOf(target).name as string}`);
-
-        return dep;
-    };
-    */
+    const deps = ReflectUtils.getCollection("LooseDependencies", target.constructor);
+    deps.set(depConstructor, key);
+    ReflectUtils.setCollection("LooseDependencies", deps, target.constructor);
 }
 
 export function Export(target: Component, key: string) {
@@ -201,6 +192,21 @@ export function Provider<T extends Constructor<any>>(Base: T) {
             ReflectUtils.define("Provider", this, component);
 
             const constructor = component.constructor;
+
+            const looseDeps = ReflectUtils.getCollection("LooseDependencies", constructor);
+            looseDeps.forEach((key, dep) => {
+                const dependency = this.getDependency(dep);
+
+                const depName: string = ReflectUtils.get("Name", dep) ?? dep.name;
+
+                if (!dependency)
+                    throw new Error(`Missing dependency ${depName} ${key ? `for ${key} ` : ""}in ${ReflectUtils.get("Name", constructor)!}`);
+
+                logger.debug(`[${ReflectUtils.get("Name", constructor)!}] Loading loose dependency ${depName}`);
+
+                if (key)
+                    (component as any)[key] = dependency;
+            });
 
             const deps = ReflectUtils.getCollection("Dependencies", constructor);
             await deps.asyncMap(async (key, dep) => {

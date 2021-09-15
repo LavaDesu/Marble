@@ -23,7 +23,7 @@ type MetadataMap = {
 
 type MetadataTargetMap = {
     DesignType: Component;
-    DesignParamTypes: Component[];
+    DesignParamTypes: Component;
     DesignReturnType: Component;
     Dependants: Component;
     Dependencies: Constructable<Component>;

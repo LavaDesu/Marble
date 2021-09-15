@@ -1,5 +1,5 @@
 import { Client, Constants as ErisConstants } from "eris";
-import { CommandContext, SlashCommand } from "slash-create";
+import { CommandContext } from "slash-create";
 
 import { Blob } from "../Blob";
 import { Component, ComponentLoad } from "../Utils/DependencyInjection";
@@ -43,14 +43,7 @@ export class DiscordClient extends Client implements Component {
     }
 
     public async unload() {
-        this.editStatus("offline");
         await this.componentQueue.clear();
-        // HACK: grace period for status edit to work
-        await new Promise(r => setTimeout(r, 1e3));
-
-        const p = new Promise(r => this.once("disconnect", r));
         this.disconnect({ reconnect: false });
-        await p;
-        this.logger.info("disconnected");
     }
 }

@@ -95,6 +95,8 @@ export namespace ReflectUtils {
 }
 
 export interface Component {
+    // Added to allow basically any class be a Component
+    constructor: any;
     load?(): void | Promise<void>;
     unload?(): void | Promise<void>;
 }

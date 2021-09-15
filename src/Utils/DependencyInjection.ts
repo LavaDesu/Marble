@@ -176,10 +176,16 @@ export function Provider<T extends Constructor<any>>(Base: T) {
         constructor(...args: any[]) {
             super(...args);
 
+            if (!ReflectUtils.get("Name", this.constructor))
+                this.load();
+        }
+
+        async load() {
+            logger.debug(`[${ReflectUtils.get("Name", this.constructor) ?? Base.name}] Loading Provider`);
             const exports = ReflectUtils.getCollection("Exports", Base);
 
-            exports.asyncMap(async key => await this.inject(this[key]))
-                .then(() => this.load?.());
+            await exports.asyncMap(async key => await this.inject(this[key]));
+            await super.load?.();
         }
 
         markReady(constructor: Constructable) {
@@ -242,10 +248,11 @@ export function Provider<T extends Constructor<any>>(Base: T) {
 
         getDependency<U>(dep: Constructable<U>): U | undefined {
             const exports = ReflectUtils.getCollection("Exports", Base);
+            const parent = ReflectUtils.get("Provider", this);
 
             const key = exports.get(dep);
             if (!key)
-                return;
+                return parent?.getDependency(dep);
             return this[key];
         }
 

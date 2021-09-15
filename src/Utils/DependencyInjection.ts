@@ -168,7 +168,7 @@ export interface Provider {
     getDependency<T>(dep: Constructable<T>): T | undefined;
     load?(): void | Promise<void>;
     markReady(component: Constructable): void;
-    unload(): void | Promise<void>;
+    unload?(): void | Promise<void>;
     unloadComponent(component: Constructable): void;
 }
 export function Provider<T extends Constructor<any>>(Base: T) {

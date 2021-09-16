@@ -1,9 +1,15 @@
 import { Blob } from "../Blob";
-import { ReflectUtils } from "./DependencyInjection";
+import { DIReflector } from "./DependencyInjection";
 
+// TODO
+// Previous idea was to decorate a logger property with this to set its name via the
+// component name, however, since class decorators are applied last (thus, after this
+// decorator), the class name isn't set.
+//
+// Kept here as reference
 export function UseLogger(name?: string) {
     return function(target: any, _key: string, descriptor: PropertyDescriptor) {
-        const componentName = ReflectUtils.get("Name", Object.getPrototypeOf(target));
+        const componentName = DIReflector.get("Name", Object.getPrototypeOf(target));
         const instance = new Logger(name ?? componentName);
 
         descriptor.get = () => instance;

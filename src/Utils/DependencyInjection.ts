@@ -117,6 +117,7 @@ export function PreUnload(target: Provider, key: string) {
 export interface Provider {
     getDependency<T>(dep: Constructable<T>): T | undefined;
     load?(): void | Promise<void>;
+    loadComponent(component: Component): void;
     markReady(component: Constructable): void;
     unload?(): void | Promise<void>;
     unloadComponent(component: Constructable): void;
@@ -134,7 +135,7 @@ export function Provider<T extends Constructor<any>>(Base: T) {
             logger.debug(`[${Reflector.get("Name", this.constructor) ?? Base.name}] Loading Provider`);
             const exports = Reflector.getCollection("Exports", Base);
 
-            await exports.asyncMap(async key => await this.inject(this[key]));
+            await exports.asyncMap(async key => await this.loadComponent(this[key]));
             await super.load?.();
         }
 
@@ -147,7 +148,7 @@ export function Provider<T extends Constructor<any>>(Base: T) {
             lock.resolve();
         }
 
-        async inject(component: Component) {
+        async loadComponent(component: Component) {
             Reflector.define("Provider", this, component);
 
             const constructor = component.constructor;

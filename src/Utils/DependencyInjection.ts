@@ -13,6 +13,7 @@ type MetadataMap = {
     Exports: Collection<Constructable<Component>, string>;
     LoadPromise: Collection<Constructable<Component>, Lock>;
     Name: string;
+    PreUnload: string;
     Provider: Provider;
     RequiresLoad: Lock;
 };
@@ -27,6 +28,7 @@ type MetadataTargetMap = {
     Exports: Constructable<Provider>;
     LoadPromise: Constructable<Provider>;
     Name: Constructable<Component>;
+    PreUnload: Constructable<Provider>;
     Provider: Component;
     RequiresLoad: Constructable<Component>;
 };
@@ -41,6 +43,7 @@ const MetadataSymbols = {
     Exports: Symbol("exports"),
     LoadPromise: Symbol("loadPromise"),
     Name: Symbol("name"),
+    PreUnload: Symbol("preUnload"),
     Provider: Symbol("provider"),
     RequiresLoad: Symbol("requiresLoad")
 } as const;
@@ -105,6 +108,10 @@ export function NeedsLoad(target: Provider, key: string) {
     locks.set(constructor, new Lock());
 
     Reflector.setCollection("LoadPromise", locks, target.constructor);
+}
+
+export function PreUnload(target: Provider, key: string) {
+    Reflector.define("PreUnload", key, target.constructor);
 }
 
 export interface Provider {
@@ -187,11 +194,12 @@ export function Provider<T extends Constructor<any>>(Base: T) {
             });
 
             if (component.load !== undefined) {
+                const name: string = Reflector.get("Name", constructor) ?? constructor.name;
                 const res = component.load?.();
                 if (res instanceof Promise) {
                     const lock: Lock = Reflector.get("RequiresLoad", component.constructor)!;
                     if (!lock)
-                        throw new Error(`Async load without @ComponentLoad in ${component.constructor.name as string}`);
+                        throw new Error(`Async load without @ComponentLoad in ${name}`);
 
                     logger.debug(`[${Reflector.get("Name", constructor)!}] Awaiting`);
                     await res;
@@ -236,7 +244,14 @@ export function Provider<T extends Constructor<any>>(Base: T) {
         }
 
         async unload() {
-            logger.debug(`Preparing to unload provider ${Base.name}`);
+            logger.debug(`${Base.name} Preparing to unload provider`);
+
+            const preUnload = Reflector.get("PreUnload", Base);
+            if (preUnload) {
+                logger.debug(`${Base.name} Running pre-unload method ${preUnload}`);
+                await super[preUnload]?.();
+                logger.debug(`${Base.name} Unloading exports`);
+            }
 
             for (const [constructor] of Reflector.getCollection("Exports", Base))
                 await this.unloadComponent(constructor);

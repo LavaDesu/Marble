@@ -64,6 +64,7 @@ export class InviteTracker implements Component {
                 continue;
             }
             if (invite[1] !== currentInvite.uses) {
+                invites.set(invite[0], currentInvite.uses);
                 const inviter = currentInvite.inviter;
                 await this.discord.createMessage(settings.guilds[guild.id], { embed: {
                     title: "beep boop new member!",

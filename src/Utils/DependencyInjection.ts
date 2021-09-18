@@ -117,10 +117,11 @@ export function PreUnload(target: Provider, key: string) {
 export interface Provider {
     getDependency<T>(dep: Constructable<T>): T | undefined;
     load?(): void | Promise<void>;
-    loadComponent(component: Component): void;
+    loadComponent(component: Component): Promise<void>;
     markReady(component: Constructable): void;
+    reloadComponent(component: Constructable): Promise<void>;
     unload?(): void | Promise<void>;
-    unloadComponent(component: Constructable): void;
+    unloadComponent(component: Constructable): Promise<void>;
 }
 export function Provider<T extends Constructor<any>>(Base: T) {
     return class extends Base implements Provider {
@@ -146,6 +147,16 @@ export function Provider<T extends Constructor<any>>(Base: T) {
                 throw new Error("Missing load promise, is this marked with @NeedsLoad?");
 
             lock.resolve();
+        }
+
+        getDependency<U>(dep: Constructable<U>): U | undefined {
+            const exports = Reflector.getCollection("Exports", Base);
+            const parent = Reflector.get("Provider", this);
+
+            const key = exports.get(dep);
+            if (!key)
+                return parent?.getDependency(dep);
+            return this[key];
         }
 
         async loadComponent(component: Component) {
@@ -210,14 +221,16 @@ export function Provider<T extends Constructor<any>>(Base: T) {
             }
         }
 
-        getDependency<U>(dep: Constructable<U>): U | undefined {
-            const exports = Reflector.getCollection("Exports", Base);
-            const parent = Reflector.get("Provider", this);
+        async reloadComponent(constructor: Constructable<Component>) {
+            const component = this.getDependency(constructor);
+            if (!component)
+                return;
+            const depts = Reflector.getCollection("Dependants", component);
+            await this.unloadComponent(constructor);
+            await this.loadComponent(component);
 
-            const key = exports.get(dep);
-            if (!key)
-                return parent?.getDependency(dep);
-            return this[key];
+            for (const [dept] of depts)
+                await this.loadComponent(dept);
         }
 
         async unloadComponent(constructor: Constructable<Component>) {
@@ -245,13 +258,13 @@ export function Provider<T extends Constructor<any>>(Base: T) {
         }
 
         async unload() {
-            logger.debug(`${Base.name} Preparing to unload provider`);
+            logger.debug(`[${Base.name}] Preparing to unload provider`);
 
             const preUnload = Reflector.get("PreUnload", Base);
             if (preUnload) {
-                logger.debug(`${Base.name} Running pre-unload method ${preUnload}`);
+                logger.debug(`[${Base.name}] Running pre-unload method ${preUnload}`);
                 await super[preUnload]?.();
-                logger.debug(`${Base.name} Unloading exports`);
+                logger.debug(`[${Base.name}] Unloading exports`);
             }
 
             for (const [constructor] of Reflector.getCollection("Exports", Base))

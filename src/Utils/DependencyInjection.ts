@@ -9,7 +9,7 @@ type MetadataMap = {
     DesignReturnType: Constructable;
     Dependants: Collection<Constructable<Component>, string>;
     Dependencies: Collection<Constructable<Component>, string>;
-    LooseDependencies: Collection<Constructable<Component>, string | undefined>;
+    LazyDependencies: Collection<Constructable<Component>, string | undefined>;
     Exports: Collection<Constructable<Component>, string>;
     LoadPromise: Collection<Constructable<Component>, Lock>;
     Name: string;
@@ -24,7 +24,7 @@ type MetadataTargetMap = {
     DesignReturnType: Component;
     Dependants: Component;
     Dependencies: Constructable<Component>;
-    LooseDependencies: Constructable<Component>;
+    LazyDependencies: Constructable<Component>;
     Exports: Constructable<Provider>;
     LoadPromise: Constructable<Provider>;
     Name: Constructable<Component>;
@@ -39,7 +39,7 @@ const MetadataSymbols = {
     DesignReturnType: "design:returntype",
     Dependants: Symbol("dependants"),
     Dependencies: Symbol("dependencies"),
-    LooseDependencies: Symbol("looseDependencies"),
+    LazyDependencies: Symbol("lazyDependencies"),
     Exports: Symbol("exports"),
     LoadPromise: Symbol("loadPromise"),
     Name: Symbol("name"),
@@ -81,12 +81,12 @@ export function Dependency(target: Component, key: string) {
     Reflector.setCollection("Dependencies", deps, target.constructor);
 }
 
-export function LooseDependency(target: Component, key: string) {
+export function LazyDependency(target: Component, key: string) {
     const depConstructor = Reflector.get("DesignType", target, key)!;
 
-    const deps = Reflector.getCollection("LooseDependencies", target.constructor);
+    const deps = Reflector.getCollection("LazyDependencies", target.constructor);
     deps.set(depConstructor, key);
-    Reflector.setCollection("LooseDependencies", deps, target.constructor);
+    Reflector.setCollection("LazyDependencies", deps, target.constructor);
 }
 
 export function Export(target: Component, key: string) {
@@ -164,7 +164,7 @@ export function Provider<T extends Constructor<any>>(Base: T) {
 
             const constructor = component.constructor;
 
-            const looseDeps = Reflector.getCollection("LooseDependencies", constructor);
+            const looseDeps = Reflector.getCollection("LazyDependencies", constructor);
             looseDeps.forEach((key, dep) => {
                 const dependency = this.getDependency(dep);
 

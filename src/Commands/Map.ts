@@ -10,20 +10,23 @@ import {
 } from "slash-create";
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { Component, Dependency } from "../Utils/DependencyInjection";
 import { Store, StoreMap, StoreWeek } from "../Components/Store";
-import { SlashCommandComponent } from "./SlashCommandComponent";
+import { Component, Dependency } from "../Utils/DependencyInjection";
+import { BaseCommand, CommandExec } from "./BaseCommand";
 
 @Component("Command/Map")
-export class MapCommand extends SlashCommandComponent {
+export class MapCommand extends BaseCommand {
+    protected name = "map";
+    protected description = "Gets the current country leaderboards for a map";
+
     @Dependency private readonly discord!: DiscordClient;
     @Dependency private readonly store!: Store;
     @Dependency private readonly tracker!: LeagueTracker;
 
-    load() {
-        super.create({
-            name: "map",
-            description: "Gets the current country leaderboards for a map",
+    setupOptions() {
+        return {
+            defaultPermission: true,
+            guildIDs: this.store.getCommandGuilds(),
             options: [
                 {
                     name: "id",
@@ -31,14 +34,12 @@ export class MapCommand extends SlashCommandComponent {
                     type: CommandOptionType.INTEGER,
                     required: false
                 }
-            ],
-            defaultPermission: true,
-            guildIDs: this.store.getCommandGuilds()
-        });
+            ]
+        };
     }
 
+    @CommandExec
     async run(ctx: CommandContext) {
-        await ctx.defer();
         this.discord.componentQueue.add(ctx);
 
         const map = ctx.options.id

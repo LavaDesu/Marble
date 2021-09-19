@@ -1,44 +1,38 @@
 import { CommandContext, CommandOptionType } from "slash-create";
-import { LeagueTracker } from "../Components/LeagueTracker";
-import { Component, Dependency } from "../Utils/DependencyInjection";
 import { DiscordClient } from "../Components/Discord";
+import { LeagueTracker } from "../Components/LeagueTracker";
 import { Store } from "../Components/Store";
 import { Collection } from "../Utils/Collection";
+import { Component, Dependency } from "../Utils/DependencyInjection";
 import { sanitiseDiscord } from "../Utils/Helpers";
-import { SlashCommandComponent } from "./SlashCommandComponent";
+import { BaseCommand, CommandExec } from "./BaseCommand";
 
 @Component("Command/Leaderboards")
-export class LeaderboardsCommand extends SlashCommandComponent {
+export class LeaderboardsCommand extends BaseCommand {
+    protected name = "lb";
+    protected description = "Gets the current leaderboards for a league";
+
     @Dependency private readonly discord!: DiscordClient;
     @Dependency private readonly store!: Store;
     @Dependency private readonly tracker!: LeagueTracker;
 
-    load() {
-        super.create({
-            name: "lb",
-            description: "Gets the current leaderboards per league",
+    setupOptions() {
+        return {
             options: [
                 {
                     name: "league",
                     description: "League to get leaderboards for",
                     required: true,
                     type: CommandOptionType.STRING,
-                    // XXX: Needs reload
                     choices: this.store.getLeagues().keysAsArray().map(name => ({ name, value: name }))
                 }
             ],
             defaultPermission: true,
             guildIDs: this.store.getCommandGuilds()
-        });
+        };
     }
 
-    async run(ctx: CommandContext) {
-        await ctx.defer();
-        this.discord.componentQueue.add(ctx);
-
-        await this.exec(ctx);
-    }
-
+    @CommandExec
     private async exec(ctx: CommandContext) {
         const league = this.store.getLeague(ctx.options.league);
         if (!league) {

@@ -1,23 +1,30 @@
 import { CommandContext } from "slash-create";
-import { Component, Dependency } from "../Utils/DependencyInjection";
 import { Store } from "../Components/Store";
-import { SlashCommandComponent } from "./SlashCommandComponent";
+import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
+import { BaseCommand, CommandExec } from "./BaseCommand";
 
 @Component("Command/Ping")
-export class PingCommand extends SlashCommandComponent {
+export class PingCommand extends BaseCommand {
+    protected name = "ping";
+    protected description = "classic ping pong test thingy thing";
+
     @Dependency
     private readonly store!: Store;
 
-    load() {
-        super.create({
-            name: "ping",
-            description: "classic ping pong test thingy",
-            defaultPermission: true,
-            guildIDs: this.store.getCommandGuilds()
-        });
+    @ComponentLoad
+    async load() {
+        await super.load();
     }
 
-    async run(ctx: CommandContext) {
+    setupOptions() {
+        return {
+            defaultPermission: true,
+            guildIDs: this.store.getCommandGuilds()
+        };
+    }
+
+    @CommandExec
+    private async exec(ctx: CommandContext) {
         await ctx.send("pong");
     }
 }

@@ -1,71 +1,32 @@
 import * as fs from "fs/promises";
 import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } from "slash-create";
 import { Blob } from "../Blob";
-import { Component, Dependency } from "../Utils/DependencyInjection";
 import { DiscordClient } from "../Components/Discord";
-import { Store } from "../Components/Store";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { MapCommand } from "./Map";
-import { SlashCommandComponent } from "./SlashCommandComponent";
+import { Store } from "../Components/Store";
+import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
+import { BaseCommand, Subcommand } from "./BaseCommand";
+import { MapCommand } from "./Map";
 
 @Component("Command/Dev")
-export class DevCommand extends SlashCommandComponent {
-    private readonly logger = new Logger("Command/Dev");
+export class DevCommand extends BaseCommand {
+    protected name = "dev";
+    protected description = "dev commands :)";
+    protected readonly logger = new Logger("Command/Dev");
 
     @Dependency private readonly discord!: DiscordClient;
     @Dependency private readonly mapCommand!: MapCommand;
     @Dependency private readonly store!: Store;
     @Dependency private readonly tracker!: LeagueTracker;
 
-    load() {
-        super.create({
-            name: "dev",
-            description: "dev commands :)",
-            options: [
-                {
-                    type: CommandOptionType.SUB_COMMAND,
-                    name: "record",
-                    description: "toggle recordings of new scores"
-                },
-                {
-                    type: CommandOptionType.SUB_COMMAND,
-                    name: "replay",
-                    description: "replay a score in tracker",
-                    options: [{
-                        name: "file",
-                        description: "file containing score",
-                        required: true,
-                        type: CommandOptionType.STRING
-                    }]
-                },
-                {
-                    type: CommandOptionType.SUB_COMMAND,
-                    name: "reload",
-                    description: "reloads data"
-                },
-                {
-                    type: CommandOptionType.SUB_COMMAND,
-                    name: "clear",
-                    description: "clears component queue"
-                },
-                {
-                    type: CommandOptionType.SUB_COMMAND,
-                    name: "dump",
-                    description: "dumps every map"
-                },
-                {
-                    type: CommandOptionType.SUB_COMMAND,
-                    name: "eval",
-                    description: "evaluate code",
-                    options: [{
-                        name: "code",
-                        description: "code to evaluate",
-                        required: true,
-                        type: CommandOptionType.STRING
-                    }]
-                }
-            ],
+    @ComponentLoad
+    async load() {
+        await super.load();
+    }
+
+    protected setupOptions() {
+        return {
             defaultPermission: false,
             guildIDs: Blob.Environment.devGuild,
             permissions: {
@@ -77,62 +38,86 @@ export class DevCommand extends SlashCommandComponent {
                     }
                 ]
             }
-        });
+        };
     }
 
-    async run(ctx: CommandContext) {
-        await ctx.defer();
+    @Subcommand("sync", "re-sync commands")
+    async sync(ctx: CommandContext) {
+        this.logger.debug("sync");
+        await this.slashInstance.syncCommandsPromise();
+        await ctx.send("synced");
+    }
 
-        if (ctx.options.record) {
-            const isRecording = this.tracker.toggleRecord();
-            this.logger.info("record", isRecording);
-            ctx.send(isRecording.toString());
-        }
+    @Subcommand("record", "toggle recording of new scores")
+    async record(ctx: CommandContext) {
+        const isRecording = this.tracker.toggleRecord();
+        this.logger.debug("record", isRecording);
+        await ctx.send(isRecording.toString());
+    }
 
-        if (ctx.options.replay) {
-            this.logger.info("replay", ctx.options.replay.file);
-            try {
-                const file = await fs.readFile(ctx.options.replay.file, "utf8");
-                const score = JSON.parse(file);
-                await this.tracker.process(score);
-                await ctx.send("replayed");
-            } catch(e) {
-                this.logger.error(e);
-                ctx.send("error :( check console");
-            }
+    @Subcommand("replay", "replay a score in tracker", [{
+        type: CommandOptionType.STRING,
+        name: "file",
+        description: "file containing score",
+        required: true
+    }])
+    async replay(ctx: CommandContext) {
+        this.logger.debug("replay", ctx.options.replay.file);
+        try {
+            const file = await fs.readFile(ctx.options.replay.file, "utf8");
+            const score = JSON.parse(file);
+            await this.tracker.process(score);
+            await ctx.send("replayed");
+        } catch(e) {
+            this.logger.error(e);
+            await ctx.send("error :( check console");
         }
+    }
 
-        if (ctx.options.reload) {
-            this.logger.info("reload");
-            try {
-                await this.store.load();
-                await this.tracker.syncScores();
-                await ctx.send("a ok");
-            } catch(e) {
-                this.logger.error(e);
-                ctx.send("error :( check console");
-            }
+    @Subcommand("reload", "reloads store data")
+    async reload(ctx: CommandContext) {
+        this.logger.debug("reload");
+        try {
+            this.slashInstance.ready = false;
+            await this.slashInstance.reloadComponent(Store);
+            this.slashInstance.ready = true;
+            await this.slashInstance.requestSync();
+            // await this.store.load();
+            // await this.tracker.syncScores();
+            await ctx.send("a ok");
+        } catch(e) {
+            this.logger.error(e);
+            await ctx.send("error :( check console");
         }
+    }
 
-        if (ctx.options.dump) {
-            await ctx.send("brrr");
+    @Subcommand("clear", "clears component queue")
+    async clear(ctx: CommandContext) {
+        this.logger.debug("clear comp queue");
+        await this.discord.componentQueue.clear();
+        await ctx.send("cleared");
+    }
 
-            const maps = this.store.getLeagues().map(league =>
-                league.weeks.map(week => week.maps.valuesAsArray())
-            ).flat(2);
-            for (const m of maps)
-                await this.mapCommand.exec(ctx, m, true);
-            return;
-        }
+    @Subcommand("dump", "dumps every league map")
+    async dump(ctx: CommandContext) {
+        await ctx.send("brrr");
 
-        if (ctx.options.eval) {
-            eval(ctx.options.eval.code);
-            await ctx.send("eval");
-        }
-        if (ctx.options.clear) {
-            this.logger.info("clear comp queue");
-            await this.discord.componentQueue.clear();
-            await ctx.send("cleared");
-        }
+        const maps = this.store.getLeagues().map(league =>
+            league.weeks.map(week => week.maps.valuesAsArray())
+        ).flat(2);
+
+        for (const m of maps)
+            await this.mapCommand.exec(ctx, m, true);
+    }
+
+    @Subcommand("eval", "evaluate code", [{
+        type: CommandOptionType.STRING,
+        name: "code",
+        description: "code to evaluate",
+        required: true
+    }])
+    async eval(ctx: CommandContext) {
+        eval(ctx.options.eval.code);
+        await ctx.send("eval");
     }
 }

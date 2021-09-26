@@ -23,7 +23,7 @@
     "typescript": "^4.3.5"
   },
   "dependencies": {
-    "eris": "^0.15.1",
+    "eris": "github:LavaDesu/eris#v9-interactions-patch",
     "ramune": "github:LavaDesu/Ramune#0.0.8",
     "reflect-metadata": "^0.1.13",
     "slash-create": "^3.4.1"

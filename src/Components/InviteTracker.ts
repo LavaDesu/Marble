@@ -66,7 +66,7 @@ export class InviteTracker implements Component {
             if (invite[1] !== currentInvite.uses) {
                 invites.set(invite[0], currentInvite.uses);
                 const inviter = currentInvite.inviter;
-                await this.discord.createMessage(settings.guilds[guild.id], { embed: {
+                await this.discord.createMessage(settings.guilds[guild.id], { embeds: [{
                     title: "beep boop new member!",
                     thumbnail: { url: member.avatarURL },
                     fields: [
@@ -88,7 +88,7 @@ export class InviteTracker implements Component {
                             value: currentInvite.code
                         }
                     ]
-                } });
+                }] });
             }
         }
     }

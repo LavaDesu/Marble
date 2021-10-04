@@ -20,6 +20,7 @@ export class DiscordClient extends Client implements Component {
             intents: ErisConstants.Intents.guilds
                    + ErisConstants.Intents.guildInvites
                    + ErisConstants.Intents.guildMembers
+                   + ErisConstants.Intents.guildMessages
         });
     }
 

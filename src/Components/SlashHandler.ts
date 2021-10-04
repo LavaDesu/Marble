@@ -7,6 +7,7 @@ import { DevCommand } from "../Commands/Dev";
 import { LeaderboardsCommand } from "../Commands/Leaderboards";
 import { MapCommand } from "../Commands/Map";
 import { PingCommand } from "../Commands/Ping";
+import { SnipeCommand } from "../Commands/Snipe";
 
 export interface SlashHandler extends Provider {}
 @Provider
@@ -20,6 +21,7 @@ export class SlashHandler extends SlashCreator {
     @Export private readonly lbCommand: LeaderboardsCommand;
     @Export private readonly mapCommand: MapCommand;
     @Export private readonly pingCommand: PingCommand;
+    @Export private readonly snipeCommand: SnipeCommand;
 
     public ready: boolean;
 
@@ -55,6 +57,7 @@ export class SlashHandler extends SlashCreator {
         this.lbCommand = new LeaderboardsCommand(this);
         this.mapCommand = new MapCommand(this);
         this.pingCommand = new PingCommand(this);
+        this.snipeCommand = new SnipeCommand(this);
 
         this.ready = false;
     }

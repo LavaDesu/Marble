@@ -118,7 +118,6 @@ export abstract class BaseCommand {
     }
 
     protected async onCommand(ctx: CommandContext) {
-        await ctx.defer();
         const subcommands = Reflector.getCollection("Subcommands", this.constructor);
 
         for (const [name, { method }] of subcommands)

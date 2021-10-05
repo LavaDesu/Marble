@@ -81,7 +81,8 @@ export class SlashHandler extends SlashCreator {
     }
 
     async unload() {
-        await this.syncCommandsPromise();
+        if (!Blob.Environment.development)
+            await this.syncCommandsPromise();
     }
 
     public async requestSync() {

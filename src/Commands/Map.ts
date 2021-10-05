@@ -11,8 +11,8 @@ import {
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { ConfigStore } from "../Components/Stores/ConfigStore";
-import { LeagueStore, StoreMap, StoreWeek } from "../Components/Stores/LeagueStore";
-import { Component, Dependency } from "../Utils/DependencyInjection";
+import { LeagueStore, LeagueMap, LeagueWeek } from "../Components/Stores/LeagueStore";
+import { Component, Dependency, LazyDependency } from "../Utils/DependencyInjection";
 import { BaseCommand, CommandExec } from "./BaseCommand";
 
 @Component("Command/Map")
@@ -21,7 +21,7 @@ export class MapCommand extends BaseCommand {
     protected description = "Gets the current country leaderboards for a map";
 
     @Dependency private readonly config!: ConfigStore;
-    @Dependency private readonly discord!: DiscordClient;
+    @LazyDependency private readonly discord!: DiscordClient;
     @Dependency private readonly leagueStore!: LeagueStore;
     @Dependency private readonly tracker!: LeagueTracker;
 
@@ -65,7 +65,7 @@ export class MapCommand extends BaseCommand {
         await this.exec(ctx, map);
     }
 
-    public async exec(ctx: CommandContext, map: StoreMap, debug: boolean = false) {
+    public async exec(ctx: CommandContext, map: LeagueMap, debug: boolean = false) {
         const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
         if (sender)
             await this.tracker.refreshPlayer(sender.osu.id);
@@ -137,15 +137,15 @@ export class MapCommand extends BaseCommand {
         });
     }
 
-    async prompt(ctx: CommandContext): Promise<StoreMap> {
-        let resolve: (map: StoreMap) => void;
-        const promise: Promise<StoreMap> = new Promise(r => resolve = r);
+    async prompt(ctx: CommandContext): Promise<LeagueMap> {
+        let resolve: (map: LeagueMap) => void;
+        const promise: Promise<LeagueMap> = new Promise(r => resolve = r);
 
         // XXX: hardcoded Upper default
         const player = this.leagueStore.getPlayerByDiscord(ctx.user.id);
         let league = player ? player.league : this.leagueStore.getLeague("Upper")!;
-        let week: StoreWeek;
-        let map: StoreMap;
+        let week: LeagueWeek;
+        let map: LeagueMap;
 
         const selectLeagueComponent = (): ComponentActionRow => ({
             type: ComponentType.ACTION_ROW,

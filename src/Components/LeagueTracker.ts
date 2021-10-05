@@ -16,7 +16,7 @@ import { MessageEmbedOptions } from "slash-create";
 import { Blob } from "../Blob";
 import { Collection } from "../Utils/Collection";
 import { ConfigStore } from "./Stores/ConfigStore";
-import { LeagueStore, StoreMap } from "./Stores/LeagueStore";
+import { LeagueStore, LeagueMap } from "./Stores/LeagueStore";
 import { asyncForEach, asyncMap } from "../Utils/Helpers";
 import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
@@ -228,7 +228,7 @@ export class LeagueTracker extends EventEmitter implements Component {
         return;
     }
 
-    private async post(map: StoreMap, score: Score) {
+    private async post(map: LeagueMap, score: Score) {
         const beatmap = map.map;
         const beatmapset = map.beatmapset;
         const user = score.user!;

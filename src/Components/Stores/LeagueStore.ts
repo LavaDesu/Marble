@@ -7,9 +7,9 @@ import { Logger } from "../../Utils/Logger";
 import { ConfigStore } from "./ConfigStore";
 
 export interface LeagueConfig {
-    leagues: Record<string, League>;
+    leagues: Record<string, LeagueObject>;
 }
-interface League {
+interface LeagueObject {
     players: [string, string][];
     maps: [string, OperatorNode?][][];
 }
@@ -21,10 +21,10 @@ export class LeagueStore {
     @Dependency private readonly config!: ConfigStore;
     @Dependency private readonly ramune!: Ramune;
 
-    private readonly leagues: Collection<string, StoreLeague> = new Collection();
-    private readonly maps: Collection<number, StoreMap> = new Collection();
-    private readonly players: Collection<number, StorePlayer> = new Collection();
-    private readonly discordPlayers: Collection<string, StorePlayer> = new Collection();
+    private readonly leagues: Collection<string, League> = new Collection();
+    private readonly maps: Collection<number, LeagueMap> = new Collection();
+    private readonly players: Collection<number, LeaguePlayer> = new Collection();
+    private readonly discordPlayers: Collection<string, LeaguePlayer> = new Collection();
 
     @ComponentLoad
     public async load(): Promise<void> {
@@ -37,7 +37,7 @@ export class LeagueStore {
         for (const leagueName in data.leagues) {
             const rawLeague = data.leagues[leagueName];
 
-            const league: StoreLeague = {
+            const league: League = {
                 name: leagueName,
                 players: new Collection(),
                 weeks: new Collection()
@@ -52,14 +52,14 @@ export class LeagueStore {
                     this.logger.error("missing user", player[1], e);
                     return;
                 }
-                const res: StorePlayer = { league, osu };
+                const res: LeaguePlayer = { league, osu };
                 league.players.set(osu.id, res);
                 this.players.set(osu.id, res);
                 this.discordPlayers.set(player[0], res);
             });
             await asyncForEach(rawLeague.maps, async (rawWeek, index) => {
                 const number = index + 1;
-                const week: StoreWeek = {
+                const week: LeagueWeek = {
                     league,
                     maps: new Collection(),
                     mods: new Collection(),
@@ -85,7 +85,7 @@ export class LeagueStore {
                         return;
                     }
 
-                    const res: StoreMap = { league, map, beatmapset, week };
+                    const res: LeagueMap = { league, map, beatmapset, week };
                     if (rawMap[1]) {
                         res.mods = rawMap[1];
                         week.mods.set(map.id, rawMap[1]);
@@ -182,27 +182,27 @@ export class LeagueStore {
     }
 }
 
-export interface StoreLeague {
+export interface League {
     name: string;
-    players: Collection<number, StorePlayer>;
-    weeks: Collection<number, StoreWeek>;
+    players: Collection<number, LeaguePlayer>;
+    weeks: Collection<number, LeagueWeek>;
 }
-export interface StorePlayer {
-    league: StoreLeague;
+export interface LeaguePlayer {
+    league: League;
     osu: RamuneUser;
 }
-export interface StoreWeek {
-    league: StoreLeague;
-    maps: Collection<number, StoreMap>;
+export interface LeagueWeek {
+    league: League;
+    maps: Collection<number, LeagueMap>;
     mods: Collection<number, OperatorNode>;
     number: number;
 }
-export interface StoreMap {
-    league: StoreLeague;
+export interface LeagueMap {
+    league: League;
     map: Beatmap;
     beatmapset: Beatmapset;
     mods?: OperatorNode;
-    week: StoreWeek;
+    week: LeagueWeek;
 }
 
 export interface OperatorOR {

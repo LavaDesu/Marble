@@ -1,7 +1,8 @@
 import { CommandContext, CommandOptionType } from "slash-create";
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { Store } from "../Components/Store";
+import { ConfigStore } from "../Components/Stores/ConfigStore";
+import { LeagueStore } from "../Components/Stores/LeagueStore";
 import { Collection } from "../Utils/Collection";
 import { Component, Dependency } from "../Utils/DependencyInjection";
 import { sanitiseDiscord } from "../Utils/Helpers";
@@ -12,8 +13,9 @@ export class LeaderboardsCommand extends BaseCommand {
     protected name = "lb";
     protected description = "Gets the current leaderboards for a league";
 
+    @Dependency private readonly config!: ConfigStore;
     @Dependency private readonly discord!: DiscordClient;
-    @Dependency private readonly store!: Store;
+    @Dependency private readonly leagueStore!: LeagueStore;
     @Dependency private readonly tracker!: LeagueTracker;
 
     setupOptions() {
@@ -24,22 +26,22 @@ export class LeaderboardsCommand extends BaseCommand {
                     description: "League to get leaderboards for",
                     required: true,
                     type: CommandOptionType.STRING,
-                    choices: this.store.getLeagues().keysAsArray().map(name => ({ name, value: name }))
+                    choices: this.leagueStore.getLeagues().keysAsArray().map(name => ({ name, value: name }))
                 }
             ],
             defaultPermission: true,
-            guildIDs: this.store.getCommandGuilds()
+            guildIDs: this.config.getCommandGuilds()
         };
     }
 
     @CommandExec
     private async exec(ctx: CommandContext) {
-        const league = this.store.getLeague(ctx.options.league);
+        const league = this.leagueStore.getLeague(ctx.options.league);
         if (!league) {
             await ctx.editOriginal("Unknown league");
             return;
         }
-        const sender = this.store.getPlayerByDiscord(ctx.user.id);
+        const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
         if (sender)
             await this.tracker.refreshPlayer(sender.osu.id);
 

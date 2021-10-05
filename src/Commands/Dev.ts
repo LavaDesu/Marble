@@ -3,7 +3,8 @@ import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } f
 import { Blob } from "../Blob";
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { Store } from "../Components/Store";
+import { ConfigStore } from "../Components/Stores/ConfigStore";
+import { LeagueStore } from "../Components/Stores/LeagueStore";
 import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { BaseCommand, Subcommand } from "./BaseCommand";
@@ -16,8 +17,8 @@ export class DevCommand extends BaseCommand {
     protected readonly logger = new Logger("Command/Dev");
 
     @Dependency private readonly discord!: DiscordClient;
+    @Dependency private readonly leagueStore!: LeagueStore;
     @Dependency private readonly mapCommand!: MapCommand;
-    @Dependency private readonly store!: Store;
     @Dependency private readonly tracker!: LeagueTracker;
 
     @ComponentLoad
@@ -79,7 +80,8 @@ export class DevCommand extends BaseCommand {
         this.logger.debug("reload");
         try {
             this.slashInstance.ready = false;
-            await this.slashInstance.reloadComponent(Store);
+            await this.slashInstance.reloadComponent(ConfigStore);
+            await this.slashInstance.reloadComponent(LeagueStore);
             this.slashInstance.ready = true;
             await this.slashInstance.requestSync();
             // await this.store.load();
@@ -102,7 +104,7 @@ export class DevCommand extends BaseCommand {
     async dump(ctx: CommandContext) {
         await ctx.send("brrr");
 
-        const maps = this.store.getLeagues().map(league =>
+        const maps = this.leagueStore.getLeagues().map(league =>
             league.weeks.map(week => week.maps.valuesAsArray())
         ).flat(2);
 

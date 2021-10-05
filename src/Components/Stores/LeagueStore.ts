@@ -1,81 +1,39 @@
-import * as fs from "fs/promises";
-import type { Beatmap, Beatmapset, Mod, ScoreRank, User as RamuneUser } from "ramune";
+import type { Beatmap, Beatmapset, Mod, User as RamuneUser } from "ramune";
 import { Ramune } from "ramune";
-import { asyncForEach } from "../Utils/Helpers";
-import { Collection } from "../Utils/Collection";
-import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
-import { Logger } from "../Utils/Logger";
+import { Collection } from "../../Utils/Collection";
+import { Component, ComponentLoad, Dependency } from "../../Utils/DependencyInjection";
+import { asyncForEach } from "../../Utils/Helpers";
+import { Logger } from "../../Utils/Logger";
+import { ConfigStore } from "./ConfigStore";
 
-interface Data {
-    commandGuilds: string[];
-    inviteTracking: InviteTrackingSettings;
-    rankEmotes: { [name in ScoreRank]: string };
+export interface LeagueConfig {
     leagues: Record<string, League>;
-}
-interface InviteTrackingSettings {
-    guilds: Record<string, string>;
 }
 interface League {
     players: [string, string][];
     maps: [string, OperatorNode?][][];
 }
 
-export interface StoreLeague {
-    name: string;
-    players: Collection<number, StorePlayer>;
-    weeks: Collection<number, StoreWeek>;
-}
-export interface StorePlayer {
-    league: StoreLeague;
-    osu: RamuneUser;
-}
-export interface StoreWeek {
-    league: StoreLeague;
-    maps: Collection<number, StoreMap>;
-    mods: Collection<number, OperatorNode>;
-    number: number;
-}
-export interface StoreMap {
-    league: StoreLeague;
-    map: Beatmap;
-    beatmapset: Beatmapset;
-    mods?: OperatorNode;
-    week: StoreWeek;
-}
-export interface OperatorOR {
-    OR: OperatorNode[];
-}
-export type OperatorNode = OperatorOR | Mod | Mod[];
+@Component("Store/League")
+export class LeagueStore {
+    private readonly logger = new Logger("Store/League");
 
-@Component("Store")
-export class Store implements Component {
-    private readonly logger = new Logger("Store");
-
-    private commandGuilds: string[] = [];
-    private inviteTracking: InviteTrackingSettings = { guilds: {} };
-    private rankEmotes!: { [name in ScoreRank]: string };
+    @Dependency private readonly config!: ConfigStore;
+    @Dependency private readonly ramune!: Ramune;
 
     private readonly leagues: Collection<string, StoreLeague> = new Collection();
     private readonly maps: Collection<number, StoreMap> = new Collection();
     private readonly players: Collection<number, StorePlayer> = new Collection();
     private readonly discordPlayers: Collection<string, StorePlayer> = new Collection();
 
-    @Dependency
-    private readonly ramune!: Ramune;
-
     @ComponentLoad
     public async load(): Promise<void> {
-        const raw = await fs.readFile("./data.json", "utf8");
-        const data: Data = JSON.parse(raw);
-
-        this.commandGuilds = data.commandGuilds;
-        this.inviteTracking = data.inviteTracking;
-        this.rankEmotes = data.rankEmotes;
         this.leagues.clear();
         this.maps.clear();
         this.players.clear();
         this.discordPlayers.clear();
 
+        const data = this.config.getConfig();
         for (const leagueName in data.leagues) {
             const rawLeague = data.leagues[leagueName];
 
@@ -212,9 +170,6 @@ export class Store implements Component {
     public getPlayerByDiscord(id: string) {
         return this.discordPlayers.get(id);
     }
-    public getRankEmote(rank: ScoreRank) {
-        return this.rankEmotes[rank];
-    }
 
     public getLeagues() {
         return this.leagues;
@@ -225,13 +180,33 @@ export class Store implements Component {
     public getPlayers() {
         return this.players;
     }
-    public getCommandGuilds() {
-        return this.commandGuilds;
-    }
-    public getInviteTrackingSettings() {
-        return this.inviteTracking;
-    }
-    public getRankEmotes() {
-        return this.rankEmotes;
-    }
 }
+
+export interface StoreLeague {
+    name: string;
+    players: Collection<number, StorePlayer>;
+    weeks: Collection<number, StoreWeek>;
+}
+export interface StorePlayer {
+    league: StoreLeague;
+    osu: RamuneUser;
+}
+export interface StoreWeek {
+    league: StoreLeague;
+    maps: Collection<number, StoreMap>;
+    mods: Collection<number, OperatorNode>;
+    number: number;
+}
+export interface StoreMap {
+    league: StoreLeague;
+    map: Beatmap;
+    beatmapset: Beatmapset;
+    mods?: OperatorNode;
+    week: StoreWeek;
+}
+
+export interface OperatorOR {
+    OR: OperatorNode[];
+}
+export type OperatorNode = OperatorOR | Mod | Mod[];
+

@@ -10,7 +10,8 @@ import {
 } from "slash-create";
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { Store, StoreMap, StoreWeek } from "../Components/Store";
+import { ConfigStore } from "../Components/Stores/ConfigStore";
+import { LeagueStore, StoreMap, StoreWeek } from "../Components/Stores/LeagueStore";
 import { Component, Dependency } from "../Utils/DependencyInjection";
 import { BaseCommand, CommandExec } from "./BaseCommand";
 
@@ -19,14 +20,15 @@ export class MapCommand extends BaseCommand {
     protected name = "map";
     protected description = "Gets the current country leaderboards for a map";
 
+    @Dependency private readonly config!: ConfigStore;
     @Dependency private readonly discord!: DiscordClient;
-    @Dependency private readonly store!: Store;
+    @Dependency private readonly leagueStore!: LeagueStore;
     @Dependency private readonly tracker!: LeagueTracker;
 
     setupOptions() {
         return {
             defaultPermission: true,
-            guildIDs: this.store.getCommandGuilds(),
+            guildIDs: this.config.getCommandGuilds(),
             options: [
                 {
                     name: "id",
@@ -43,7 +45,7 @@ export class MapCommand extends BaseCommand {
         this.discord.componentQueue.add(ctx);
 
         const map = ctx.options.id
-            ? this.store.getMap(ctx.options.id)
+            ? this.leagueStore.getMap(ctx.options.id)
             : await this.prompt(ctx);
         if (!map) {
             const msg: MessageOptions = {
@@ -64,7 +66,7 @@ export class MapCommand extends BaseCommand {
     }
 
     public async exec(ctx: CommandContext, map: StoreMap, debug: boolean = false) {
-        const sender = this.store.getPlayerByDiscord(ctx.user.id);
+        const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
         if (sender)
             await this.tracker.refreshPlayer(sender.osu.id);
 
@@ -78,7 +80,7 @@ export class MapCommand extends BaseCommand {
                 value: [
                     `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
                     `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
-                    `Rank: ${this.store.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
+                    `Rank: ${this.config.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
                     `Combo: **${score.max_combo}**/${map.map.maxCombo!}x`,
                     `Set <t:${(new Date(score.created_at).getTime() / 1000).toString()}:R>`,
                     score.best_id ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})` : undefined
@@ -93,7 +95,7 @@ export class MapCommand extends BaseCommand {
                 `League = ${map.league.name}`,
                 `Week = ${map.week.number}`,
                 `Map ID = ${map.map.id}`,
-                `Required Mods = ${this.store.getFriendlyMods(map.map.id)}`
+                `Required Mods = ${this.leagueStore.getFriendlyMods(map.map.id)}`
             ].join("\n"),
             fields: fields.slice(0, 3)
         };
@@ -140,8 +142,8 @@ export class MapCommand extends BaseCommand {
         const promise: Promise<StoreMap> = new Promise(r => resolve = r);
 
         // XXX: hardcoded Upper default
-        const player = this.store.getPlayerByDiscord(ctx.user.id);
-        let league = player ? player.league : this.store.getLeague("Upper")!;
+        const player = this.leagueStore.getPlayerByDiscord(ctx.user.id);
+        let league = player ? player.league : this.leagueStore.getLeague("Upper")!;
         let week: StoreWeek;
         let map: StoreMap;
 
@@ -152,7 +154,7 @@ export class MapCommand extends BaseCommand {
                 custom_id: "select_league",
                 min_values: 1,
                 max_values: 1,
-                options: this.store.getLeagues().map(mapLeague => ({
+                options: this.leagueStore.getLeagues().map(mapLeague => ({
                     label: `${mapLeague.name} League`,
                     value: mapLeague.name,
                     default: league === mapLeague
@@ -199,7 +201,7 @@ export class MapCommand extends BaseCommand {
         });
 
         ctx.registerComponent("select_league", async selectCtx => {
-            league = this.store.getLeague(selectCtx.values.join(""))!;
+            league = this.leagueStore.getLeague(selectCtx.values.join(""))!;
             await selectCtx.editParent({
                 embeds: [{
                     description: `League = ${league.name}`

@@ -3,10 +3,11 @@ import "reflect-metadata";
 import { Ramune } from "ramune";
 
 import { DiscordClient } from "./Components/Discord";
-import { Store } from "./Components/Store";
 import { LeagueTracker } from "./Components/LeagueTracker";
 import { InviteTracker } from "./Components/InviteTracker";
 import { SlashHandler } from "./Components/SlashHandler";
+import { ConfigStore } from "./Components/Stores/ConfigStore";
+import { LeagueStore } from "./Components/Stores/LeagueStore";
 import { Export, NeedsLoad, Provider } from "./Utils/DependencyInjection";
 import { Logger } from "./Utils/Logger";
 
@@ -32,9 +33,10 @@ export class Blob {
 
     public readonly logger = new Logger("Blob");
 
+    @Export private readonly config: ConfigStore;
     @Export private readonly discordClient: DiscordClient;
     @Export private readonly inviteTracker: InviteTracker;
-    @Export private readonly store: Store;
+    @Export private readonly leagueStore: LeagueStore;
     @Export private readonly tracker: LeagueTracker;
 
     @Export private readonly slashHandler: SlashHandler;
@@ -47,9 +49,10 @@ export class Blob {
         this.logger.info(`Blob ${VERSION as string}`);
         this.discordClient = new DiscordClient();
 
+        this.config = new ConfigStore();
         this.inviteTracker = new InviteTracker();
+        this.leagueStore = new LeagueStore();
         this.slashHandler = new SlashHandler();
-        this.store = new Store();
         this.tracker = new LeagueTracker();
         this.ramune = new Ramune(env.osuID, env.osuSecret, {
             requestHandler: {

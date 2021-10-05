@@ -15,7 +15,8 @@ import { MessageEmbedOptions } from "slash-create";
 
 import { Blob } from "../Blob";
 import { Collection } from "../Utils/Collection";
-import { Store, StoreMap } from "./Store";
+import { ConfigStore } from "./Stores/ConfigStore";
+import { LeagueStore, StoreMap } from "./Stores/LeagueStore";
 import { asyncForEach, asyncMap } from "../Utils/Helpers";
 import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
@@ -31,8 +32,9 @@ export interface LeagueTracker {
 export class LeagueTracker extends EventEmitter implements Component {
     private readonly logger = new Logger("Tracker/League");
 
+    @Dependency private readonly config!: ConfigStore;
+    @Dependency private readonly leagueStore!: LeagueStore;
     @Dependency private readonly ramune!: Ramune;
-    @Dependency private readonly store!: Store;
 
     private trackTimer?: NodeJS.Timer;
     private readonly requestHandler = new RequestHandler({
@@ -106,7 +108,7 @@ export class LeagueTracker extends EventEmitter implements Component {
     }
 
     public async syncScores() {
-        await this.store.getMaps().asyncMap(async map => {
+        await this.leagueStore.getMaps().asyncMap(async map => {
             if (!map.map.isScorable) return;
 
             const res = await map.league.players
@@ -144,7 +146,7 @@ export class LeagueTracker extends EventEmitter implements Component {
     private async updateScores() {
         this.logger.info("Checking for lost scores");
         const lostScores: Score[] = [];
-        await this.store.getPlayers().asyncMap(async player => {
+        await this.leagueStore.getPlayers().asyncMap(async player => {
             const plays = this.allScores.getOrSet(player.osu.id, []);
             const cursor = this.ramune.getUserScores(player.osu.id, ScoreType.Recent, Gamemode.Osu);
             for await (const score of cursor.iterate(5)) {
@@ -163,7 +165,7 @@ export class LeagueTracker extends EventEmitter implements Component {
     }
 
     private async refresh() {
-        const res = await this.store.getPlayers().asyncMap(async player => await this.refreshPlayer(player.osu.id, false));
+        const res = await this.leagueStore.getPlayers().asyncMap(async player => await this.refreshPlayer(player.osu.id, false));
         const scores = res
             .flat(1)
             .sort((a, b) => a.id - b.id);
@@ -204,8 +206,8 @@ export class LeagueTracker extends EventEmitter implements Component {
             await writeFile(`./scores/${score.id}.json`, JSON.stringify(score, undefined, 4));
 
         // Check 1: Does the map exist in the player's league?
-        const league = this.store.getPlayer(score.user_id)?.league;
-        const map = this.store.getMap(score.beatmap!.id);
+        const league = this.leagueStore.getPlayer(score.user_id)?.league;
+        const map = this.leagueStore.getMap(score.beatmap!.id);
         if (!map || map.league !== league) return;
 
         // Check 2: Is this score higher than the previous score?
@@ -214,7 +216,7 @@ export class LeagueTracker extends EventEmitter implements Component {
         if (previousScore && previousScore.score > score.score) return;
 
         // Check 3: Does the score have the necessary mods?
-        if (!this.store.testMods(map.map.id, score.mods))
+        if (!this.leagueStore.testMods(map.map.id, score.mods))
             return;
 
         scores.set(score.user_id, score);
@@ -242,7 +244,7 @@ export class LeagueTracker extends EventEmitter implements Component {
                 `League = ${map.league.name}`,
                 `Week = ${map.week.number}`,
                 `Map ID = ${beatmap.id}`,
-                `Required Mods = ${this.store.getFriendlyMods(beatmap.id)}`
+                `Required Mods = ${this.leagueStore.getFriendlyMods(beatmap.id)}`
             ].join("\n"),
             fields: [
                 {
@@ -250,7 +252,7 @@ export class LeagueTracker extends EventEmitter implements Component {
                     value: [
                         `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
                         `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
-                        `Rank: ${this.store.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
+                        `Rank: ${this.config.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
                         `Combo: **${score.max_combo}**/${map.map.maxCombo?.toString() ?? "0"}x`,
                         score.best_id ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})` : undefined
                     ].filter(i => i !== undefined).join("\n")

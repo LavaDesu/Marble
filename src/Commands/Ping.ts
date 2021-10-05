@@ -1,5 +1,5 @@
 import { CommandContext } from "slash-create";
-import { Store } from "../Components/Store";
+import { ConfigStore } from "../Components/Stores/ConfigStore";
 import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
 import { BaseCommand, CommandExec } from "./BaseCommand";
 
@@ -9,7 +9,7 @@ export class PingCommand extends BaseCommand {
     protected description = "classic ping pong test thingy thing";
 
     @Dependency
-    private readonly store!: Store;
+    private readonly config!: ConfigStore;
 
     @ComponentLoad
     async load() {
@@ -19,7 +19,7 @@ export class PingCommand extends BaseCommand {
     setupOptions() {
         return {
             defaultPermission: true,
-            guildIDs: this.store.getCommandGuilds()
+            guildIDs: this.config.getCommandGuilds()
         };
     }
 

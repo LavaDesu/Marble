@@ -11,6 +11,7 @@
         "noImplicitAny": true,
         "noImplicitReturns": true,
         "outDir": "./out",
+        "preserveSymlinks": true,
         "rootDir": "./src",
         "skipLibCheck": true,
         "sourceMap": true,

@@ -10,7 +10,7 @@ import {
     RequestType,
     ScoreType
 } from "ramune";
-import type { Beatmap, Score } from "ramune/lib/Responses";
+import type { BeatmapExtended, Score } from "ramune/lib/Responses";
 import { MessageEmbedOptions } from "slash-create";
 
 import { Blob } from "../Blob";
@@ -109,7 +109,7 @@ export class LeagueTracker extends EventEmitter implements Component {
 
     public async syncScores() {
         await this.leagueStore.getMaps().asyncMap(async map => {
-            if (!(map.map.raw as Beatmap).is_scoreable) return;
+            if (!(map.map.raw as BeatmapExtended).is_scoreable) return;
 
             const res = await map.league.players
                 .asyncMap(async player => {

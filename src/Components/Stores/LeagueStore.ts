@@ -76,6 +76,9 @@ export class LeagueStore {
                     try {
                         map = await this.ramune.getBeatmap(rawMap[0]);
                         beatmapset = await map.beatmapset!.eval();
+                        // XXX: Ramune bug; beatmap(set) isn't populated by default
+                        (map as any).populate(map!.raw);
+                        (beatmapset as any).populate(beatmapset!.raw);
                     } catch(e) {
                         this.logger.error("missing map", rawMap[0], e);
                         return;

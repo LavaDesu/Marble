@@ -7,7 +7,7 @@ specifiers:
   eris: ^0.16.1
   eslint: ^7.32.0
   eslint-plugin-import: ^2.23.4
-  ramune: github:LavaDesu/Ramune#0.0.8
+  ramune: github:LavaDesu/Ramune#0.0.12
   reflect-metadata: ^0.1.13
   slash-create: ^5.0.3
   ts-node-dev: ^1.1.8
@@ -15,7 +15,7 @@ specifiers:
 
 dependencies:
   eris: 0.16.1
-  ramune: github.com/LavaDesu/Ramune/e1598c61d248407cd4675db7bf0706df6e3ec0a5
+  ramune: github.com/LavaDesu/Ramune/e213bd591e369845e21ade8f734f031656ea456a
   reflect-metadata: 0.1.13
   slash-create: 5.0.3
 
@@ -106,10 +106,6 @@ packages:
   /@types/json-schema/7.0.8:
     resolution: {integrity: sha512-YSBPTLTVm2e2OoQIDYx8HaeWJ5tTToLH67kXR7zYNGupXMEHa2++G8k+DczX2cFVgalypqtyZIcU19AFcmOpmg==}
     dev: true
-
-  /@types/node/14.18.10:
-    resolution: {integrity: sha512-6iihJ/Pp5fsFJ/aEDGyvT4pHGmCpq7ToQ/yf4bl5SbVAvwpspYJ+v3jO7n8UyjhQVHTy+KNszOozDdv+O6sovQ==}
-    dev: false
 
   /@types/node/16.4.10:
     resolution: {integrity: sha512-TmVHsm43br64js9BqHWqiDZA+xMtbUpI1MBIA0EyiBmoV9pcEYFOSdj5fr6enZNfh4fChh+AGOLIzGwJnkshyQ==}
@@ -1710,6 +1706,7 @@ packages:
     resolution: {integrity: sha512-DqQgihaQ9cUrskJo9kIyW/+g0Vxsk8cDtZ52a3NGh0YNTfpUSArXSohyUGnvbPazEPLu398C0UxmKSOrPumUzA==}
     engines: {node: '>=4.2.0'}
     hasBin: true
+    dev: true
 
   /unbox-primitive/1.0.1:
     resolution: {integrity: sha512-tZU/3NqK3dA5gpE1KtyiJUrEB0lxnGkMFHptJ7q6ewdZ8s12QrODwNbhIJStmJkd1QDXa1NRA8aF2A1zk/Ypyw==}
@@ -1791,13 +1788,9 @@ packages:
     engines: {node: '>=6'}
     dev: true
 
-  github.com/LavaDesu/Ramune/e1598c61d248407cd4675db7bf0706df6e3ec0a5:
-    resolution: {tarball: https://codeload.github.com/LavaDesu/Ramune/tar.gz/e1598c61d248407cd4675db7bf0706df6e3ec0a5}
+  github.com/LavaDesu/Ramune/e213bd591e369845e21ade8f734f031656ea456a:
+    resolution: {tarball: https://codeload.github.com/LavaDesu/Ramune/tar.gz/e213bd591e369845e21ade8f734f031656ea456a}
     name: ramune
-    version: 0.0.8
+    version: 0.0.12
     engines: {node: '>=10.0.0'}
-    requiresBuild: true
-    dependencies:
-      '@types/node': 14.18.10
-      typescript: 4.3.5
     dev: false

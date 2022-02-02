@@ -8,7 +8,6 @@ import { LeagueStore } from "../Components/Stores/LeagueStore";
 import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { BaseCommand, Subcommand } from "./BaseCommand";
-import { MapCommand } from "./Map";
 
 @Component("Command/Dev")
 export class DevCommand extends BaseCommand {
@@ -18,7 +17,6 @@ export class DevCommand extends BaseCommand {
 
     @Dependency private readonly discord!: DiscordClient;
     @Dependency private readonly leagueStore!: LeagueStore;
-    @Dependency private readonly mapCommand!: MapCommand;
     @Dependency private readonly tracker!: LeagueTracker;
 
     @ComponentLoad
@@ -98,18 +96,6 @@ export class DevCommand extends BaseCommand {
         this.logger.debug("clear comp queue");
         await this.discord.componentQueue.clear();
         await ctx.send("cleared");
-    }
-
-    @Subcommand("dump", "dumps every league map")
-    async dump(ctx: CommandContext) {
-        await ctx.send("brrr");
-
-        const maps = this.leagueStore.getLeagues().map(league =>
-            league.weeks.map(week => week.maps.valuesAsArray())
-        ).flat(2);
-
-        for (const m of maps)
-            await this.mapCommand.exec(ctx, m, true);
     }
 
     @Subcommand("eval", "evaluate code", [{

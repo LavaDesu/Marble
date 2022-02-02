@@ -1,52 +1,43 @@
-import {
-    ButtonStyle,
-    CommandContext,
-    CommandOptionType,
-    ComponentActionRow,
-    ComponentType,
-    EmbedField,
-    MessageEmbedOptions,
-    MessageOptions
-} from "slash-create";
+import { ButtonStyle, CommandContext, CommandOptionType, ComponentActionRow, ComponentType, EmbedField, MessageEmbedOptions, MessageOptions } from "slash-create";
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { ConfigStore } from "../Components/Stores/ConfigStore";
-import { LeagueStore, LeagueMap, LeagueWeek } from "../Components/Stores/LeagueStore";
+import { League, LeagueMap, LeaguePlayer, LeagueStore, LeagueWeek } from "../Components/Stores/LeagueStore";
+import { Collection } from "../Utils/Collection";
 import { Component, Dependency, LazyDependency } from "../Utils/DependencyInjection";
-import { BaseCommand, CommandExec } from "./BaseCommand";
+import { sanitiseDiscord } from "../Utils/Helpers";
+import { BaseCommand, Subcommand } from "./BaseCommand";
 
-@Component("Command/Map")
-export class MapCommand extends BaseCommand {
-    protected name = "map";
-    protected description = "Gets the current country leaderboards for a map";
+@Component("Command/Fdl")
+export class FdlCommand extends BaseCommand {
+    protected name = "5dl";
+    protected description = "Commands related to the 5 digit league";
 
     @Dependency private readonly config!: ConfigStore;
     @LazyDependency private readonly discord!: DiscordClient;
     @Dependency private readonly leagueStore!: LeagueStore;
     @Dependency private readonly tracker!: LeagueTracker;
 
-    setupOptions() {
+    protected setupOptions() {
         return {
             defaultPermission: true,
-            guildIDs: this.config.getCommandGuilds(),
-            options: [
-                {
-                    name: "id",
-                    description: "Map ID to skip the interactive prompts",
-                    type: CommandOptionType.INTEGER,
-                    required: false
-                }
-            ]
+            guildIDs: this.config.getCommandGuilds()
         };
     }
 
-    @CommandExec
-    async run(ctx: CommandContext) {
+    @Subcommand("scores", "Get scores for a map", [{
+        name: "id",
+        description: "Map ID to skip the interactive prompts",
+        type: CommandOptionType.INTEGER,
+        required: false
+    }])
+    public async scores(ctx: CommandContext) {
         this.discord.componentQueue.add(ctx);
 
-        const map = ctx.options.id
-            ? this.leagueStore.getMap(ctx.options.id)
-            : await this.prompt(ctx);
+        const map = ctx.options.scores.id
+            ? this.leagueStore.getMap(ctx.options.scores.id)
+            : await this.promptScores(ctx);
+
         if (!map) {
             const msg: MessageOptions = {
                 embeds: [{
@@ -62,10 +53,6 @@ export class MapCommand extends BaseCommand {
             return;
         }
 
-        await this.exec(ctx, map);
-    }
-
-    public async exec(ctx: CommandContext, map: LeagueMap, debug: boolean = false) {
         const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
         if (sender)
             await this.tracker.refreshPlayer(sender.osu.id);
@@ -112,13 +99,6 @@ export class MapCommand extends BaseCommand {
             }]
         });
 
-        if (debug) {
-            await ctx.send({
-                embeds: [embed]
-            });
-            return;
-        }
-
         await ctx.editOriginal({
             embeds: [embed],
             components: fields.length > 3 ? [showAllComponent()] : []
@@ -138,13 +118,12 @@ export class MapCommand extends BaseCommand {
         });
     }
 
-    async prompt(ctx: CommandContext): Promise<LeagueMap> {
+    private async promptScores(ctx: CommandContext) {
         let resolve: (map: LeagueMap) => void;
         const promise: Promise<LeagueMap> = new Promise(r => resolve = r);
 
-        // XXX: hardcoded Upper default
         const player = this.leagueStore.getPlayerByDiscord(ctx.user.id);
-        let league = player ? player.league : this.leagueStore.getLeague("Upper")!;
+        let league = player ? player.league : this.leagueStore.getLeagues().valuesAsArray()[0];
         let week: LeagueWeek;
         let map: LeagueMap;
 
@@ -232,5 +211,165 @@ export class MapCommand extends BaseCommand {
         });
 
         return promise;
+    }
+
+    // TODO: update this dynamically instead of regenerating
+    private getLeaderboards(league: League, sender?: LeaguePlayer) {
+        const maps = this.tracker.getScores();
+
+        const points: Collection<string, number> = new Collection();
+        maps.forEach(map => {
+            map.valuesAsArray()
+                .filter(score => league.players.has(score.user!.id))
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 3)
+                .forEach((score, index) => {
+                    let name = sanitiseDiscord(score.user!.username);
+                    if (sender && score.user!.id === sender.osu.id)
+                        name = `__${name}__`;
+
+                    const p = points.getOrSet(name, 0);
+                    points.set(name, p + (3 - index));
+                });
+        });
+
+        return points;
+    }
+
+    // TODO
+    @Subcommand("leaderboards", "Gets the current leaderboards for a league"/*, [{
+        name: "league",
+        description: "League to get leaderboards for",
+        required: true,
+        type: CommandOptionType.STRING
+        choices: this.leagueStore.getLeagues().keysAsArray().map(name => ({ name, value: name }))
+    }]*/)
+    public async leaderboards(ctx: CommandContext) {
+        /*const league = this.leagueStore.getLeague(ctx.options.league);
+        if (!league) {
+            await ctx.editOriginal("Unknown league");
+            return;
+        }*/
+        const league = this.leagueStore.getLeagues().valuesAsArray()[0];
+
+        const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
+        if (sender)
+            await this.tracker.refreshPlayer(sender.osu.id);
+
+        const points = this.getLeaderboards(league, sender);
+
+        const fields = [
+            {
+                name: "Player",
+                value: "",
+                inline: true
+            },
+            {
+                name: "Score",
+                value: "",
+                inline: true
+            }
+        ];
+
+        points
+            .entriesArray()
+            .sort((a, b) => b[1] - a[1])
+            .forEach(entry => {
+                fields[0].value += `${entry[0]}\n`;
+                fields[1].value += `${entry[1]} points\n`;
+            });
+
+        await ctx.editOriginal({
+            embeds: [{
+                title: `Current Rankings - ${league.name} League`,
+                fields
+            }]
+        });
+    }
+
+    // TODO: similar to above: multi-league
+    @Subcommand("pool", "Gets the current league mappool")
+    public async pool(ctx: CommandContext) {
+        const league = this.leagueStore.getLeagues().valuesAsArray()[0];
+
+        await ctx.send({
+            embeds: [{
+                author: { name: `${league.name} League` },
+                fields: league.weeks.map(week => ({
+                    name: `Week ${week.number}`,
+                    value: week.maps
+                        .map(map => `[${map.beatmapset.artist} - **${map.beatmapset.title}** \\[${map.map.version}\\]](https://osu.ppy.sh/b/${map.map.id})`)
+                        .join("\n"),
+                    inline: false
+                }))
+            }]
+        });
+    }
+
+    @Subcommand("player", "Gets league player information", [{
+        name: "username",
+        description: "The player's *exact* username. If omitted, will use yours if possible",
+        type: CommandOptionType.STRING,
+        required: false
+    }])
+    public async player(ctx: CommandContext) {
+        let player: LeaguePlayer | undefined;
+        if (ctx.options.player.username)
+            player = this.leagueStore.getPlayers().find(user => user.osu.username === ctx.options.player.username);
+        else
+            player = this.leagueStore.getPlayerByDiscord(ctx.user.id);
+
+        if (!player) {
+            await ctx.send("Player not found!", {
+                ephemeral: true
+            });
+            return;
+        }
+        const league = player.league;
+
+        const fields = [
+            {
+                name: "Map",
+                value: "",
+                inline: true
+            },
+            {
+                name: "Score",
+                value: "",
+                inline: true
+            }
+        ];
+
+        const scores = this.tracker.getScores();
+
+        league.weeks.forEach(week => {
+            week.maps.forEach(map => {
+                fields[0].value += `[${map.beatmapset.title}](https://osu.ppy.sh/b/${map.map.id})\n`;
+
+                let index = scores.get(map.map.id)!.valuesAsArray()
+                    .filter(score => league.players.has(score.user!.id))
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 3)
+                    .map(score => score.user!.username)
+                    .indexOf(player!.osu.username);
+                if (index < 0)
+                    index = 3;
+
+                fields[1].value += `${3 - index} points\n`;
+            });
+
+            fields[0].value += "\n";
+            fields[1].value += "\n";
+        });
+
+        await ctx.send({
+            embeds: [{
+                author: {
+                    name: sanitiseDiscord(player.osu.username),
+                    icon_url: `https://s.ppy.sh/a/${player.osu.id}`
+                },
+                fields
+            }]
+        });
     }
 }

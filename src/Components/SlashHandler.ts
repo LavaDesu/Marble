@@ -4,10 +4,9 @@ import { Component, ComponentLoad, Export, LazyDependency, PreUnload, Provider }
 import { Logger } from "../Utils/Logger";
 import { DiscordClient } from "./Discord";
 import { DevCommand } from "../Commands/Dev";
-import { LeaderboardsCommand } from "../Commands/Leaderboards";
-import { MapCommand } from "../Commands/Map";
 import { PingCommand } from "../Commands/Ping";
 import { SnipeCommand } from "../Commands/Snipe";
+import { FdlCommand } from "../Commands/Fdl";
 
 export interface SlashHandler extends Provider {}
 @Provider
@@ -18,8 +17,7 @@ export class SlashHandler extends SlashCreator {
     @LazyDependency private readonly discord!: DiscordClient;
 
     @Export private readonly devCommand: DevCommand;
-    @Export private readonly lbCommand: LeaderboardsCommand;
-    @Export private readonly mapCommand: MapCommand;
+    @Export private readonly fdlCommand: FdlCommand;
     @Export private readonly pingCommand: PingCommand;
     @Export private readonly snipeCommand: SnipeCommand;
 
@@ -54,8 +52,7 @@ export class SlashHandler extends SlashCreator {
             });
 
         this.devCommand = new DevCommand(this);
-        this.lbCommand = new LeaderboardsCommand(this);
-        this.mapCommand = new MapCommand(this);
+        this.fdlCommand = new FdlCommand(this);
         this.pingCommand = new PingCommand(this);
         this.snipeCommand = new SnipeCommand(this);
 

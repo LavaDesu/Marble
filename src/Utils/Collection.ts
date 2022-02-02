@@ -32,6 +32,14 @@ export class Collection<K, V> extends Map<K, V> {
         return res;
     }
 
+    find(fn: (value: V, key: K) => boolean): V | undefined {
+        for (const entry of this.entries())
+            if (fn(entry[1], entry[0]))
+                return entry[1];
+
+        return;
+    }
+
     getOrSet(key: K, value: V): V {
         if (this.has(key)) return this.get(key)!;
         this.set(key, value);

@@ -2,8 +2,7 @@
   description = "nix dev environment";
 
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  #inputs.pnpm2nix.url = "github:LavaDesu/pnpm2nix/next";
-  inputs.pnpm2nix.url = "path:/home/rin/Projects/pnpm2nix";
+  inputs.pnpm2nix.url = "github:LavaDesu/pnpm2nix/next";
   inputs.ramune = { url = "github:LavaDesu/ramune/0.0.12"; flake = false; };
 
   outputs = { self, nixpkgs, pnpm2nix, ramune, flake-utils }:

@@ -28,13 +28,18 @@
     },
     "pnpm2nix": {
       "locked": {
-        "narHash": "sha256-zhF94AsvaMmd3kRdHe3peUDhNdzIkeK/o0HitVrWuiM=",
-        "path": "/home/rin/Projects/pnpm2nix",
-        "type": "path"
+        "lastModified": 1643819446,
+        "narHash": "sha256-FdP9KwevnpiG2a/qSDweFj9ovmCyGPpxr74DBcmkxcs=",
+        "owner": "LavaDesu",
+        "repo": "pnpm2nix",
+        "rev": "cc84a5dbb74e5ac6ece88965e52a48e719d36a24",
+        "type": "github"
       },
       "original": {
-        "path": "/home/rin/Projects/pnpm2nix",
-        "type": "path"
+        "owner": "LavaDesu",
+        "ref": "next",
+        "repo": "pnpm2nix",
+        "type": "github"
       }
     },
     "ramune": {

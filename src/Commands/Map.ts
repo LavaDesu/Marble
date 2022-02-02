@@ -89,7 +89,7 @@ export class MapCommand extends BaseCommand {
 
         const embed: MessageEmbedOptions = {
             title: `${map.beatmapset.artist} - ${map.beatmapset.title} [${map.map.version}]`,
-            url: map.map.url,
+            url: `https://osu.ppy.sh/b/${map.map.id}`,
             thumbnail: { url: `https://b.ppy.sh/thumb/${map.beatmapset.id}l.jpg` },
             description: [
                 `League = ${map.league.name}`,

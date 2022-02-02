@@ -99,6 +99,7 @@ export class MapCommand extends BaseCommand {
             ].join("\n"),
             fields: fields.slice(0, 3)
         };
+        ctx.initiallyResponded = true;
 
         let isFull = false;
         const showAllComponent = (): ComponentActionRow => ({
@@ -146,6 +147,8 @@ export class MapCommand extends BaseCommand {
         let league = player ? player.league : this.leagueStore.getLeague("Upper")!;
         let week: LeagueWeek;
         let map: LeagueMap;
+
+        await ctx.fetch();
 
         const selectLeagueComponent = (): ComponentActionRow => ({
             type: ComponentType.ACTION_ROW,

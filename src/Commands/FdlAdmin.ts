@@ -17,6 +17,8 @@ export class FdlAdminCommand extends BaseCommand {
     protected name = "5dl_admin";
     protected description = "Admin commands for 5dl";
 
+    protected readonly ephemeralResponses = false;
+
     @Dependency private readonly config!: ConfigStore;
     @Dependency private readonly database!: Database;
     @LazyDependency private readonly league!: LeagueTracker;
@@ -82,27 +84,27 @@ export class FdlAdminCommand extends BaseCommand {
             const name = ctx.options.league.create.name as string;
             const exist = await em.findOne(League, { name });
             if (exist !== null)
-                return await ctx.send("This league already exists!", { ephemeral: true });
+                return await ctx.send("This league already exists!", { ephemeral: this.ephemeralResponses });
 
             const league = new League(name);
             await em.persistAndFlush(league);
-            return await ctx.send("League created", { ephemeral: true });
+            return await ctx.send("League created", { ephemeral: this.ephemeralResponses });
         }
 
         if (ctx.options.league.delete) {
             const name = ctx.options.league.delete.name as string;
             const league = await em.findOne(League, { name }, { populate: ["players"] });
             if (league === null)
-                return await ctx.send("This league does not exist!", { ephemeral: true });
+                return await ctx.send("This league does not exist!", { ephemeral: this.ephemeralResponses });
 
             await em.removeAndFlush(league);
-            return await ctx.send("League deleted", { ephemeral: true });
+            return await ctx.send("League deleted", { ephemeral: this.ephemeralResponses });
         }
 
         if (ctx.options.league.list) {
             const league = await em.find(League, {});
 
-            return await ctx.send("Leagues: " + league.map(l => l.name).join(", "), { ephemeral: true });
+            return await ctx.send("Leagues: " + league.map(l => l.name).join(", "), { ephemeral: this.ephemeralResponses });
         }
 
         throw new Error("Unreachable code reached");
@@ -162,7 +164,7 @@ export class FdlAdminCommand extends BaseCommand {
             const leagueName = ctx.options.map.add.league as string;
             const league = await em.findOne(League, { name: leagueName });
             if (league === null)
-                return await ctx.send("League not found", { ephemeral: true });
+                return await ctx.send("League not found", { ephemeral: this.ephemeralResponses });
 
             const maps = (ctx.options.map.add.ids as string).split(",").map(i => parseInt(i));
             if (maps.find(m => isNaN(m)))
@@ -190,7 +192,7 @@ export class FdlAdminCommand extends BaseCommand {
             await this.league.updateScores(em);
             await em.flush();
 
-            return await ctx.send("Maps added", { ephemeral: true });
+            return await ctx.send("Maps added", { ephemeral: this.ephemeralResponses });
         }
         if (ctx.options.map.delete) {
             await ctx.defer(true);
@@ -205,7 +207,7 @@ export class FdlAdminCommand extends BaseCommand {
             maps.forEach(map => map.deleted = new Date());
             await em.flush();
 
-            return await ctx.send("Maps deleted", { ephemeral: true });
+            return await ctx.send("Maps deleted", { ephemeral: this.ephemeralResponses });
         }
 
         throw new Error("Unreachable code reached");
@@ -266,7 +268,7 @@ export class FdlAdminCommand extends BaseCommand {
             const leagueName = ctx.options.player.add.league as string;
             const league = await em.findOne(League, { name: leagueName });
             if (league === null)
-                return await ctx.send("League not found", { ephemeral: true });
+                return await ctx.send("League not found", { ephemeral: this.ephemeralResponses });
 
             const users = ids.split(",").map(i => parseInt(i));
             if (users.find(u => isNaN(u)))
@@ -294,18 +296,18 @@ export class FdlAdminCommand extends BaseCommand {
             await this.league.updateScores(em);
             await em.flush();
 
-            return await ctx.send("Users added", { ephemeral: true });
+            return await ctx.send("Users added", { ephemeral: this.ephemeralResponses });
         }
         if (ctx.options.player.delete) {
             const id = ctx.options.player.delete.id as number;
             const user = await em.findOne(User, { id });
             if (user === null)
-                return await ctx.send("This player does not exist!", { ephemeral: true });
+                return await ctx.send("This player does not exist!", { ephemeral: this.ephemeralResponses });
 
             user.deleted = new Date();
             await em.flush();
 
-            return await ctx.send("User deleted", { ephemeral: true });
+            return await ctx.send("User deleted", { ephemeral: this.ephemeralResponses });
         }
         if (ctx.options.player.list) {
             const leagues = await em.find(League, {}, { populate: ["players"] });

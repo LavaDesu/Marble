@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import * as path from "path";
 import {
     BeatmapLeaderboardScope,
     Gamemode,
@@ -22,6 +23,7 @@ import { User } from "../Database/Entities/User";
 import { Map } from "../Database/Entities/Map";
 import { EntityManager } from "@mikro-orm/core";
 import { Collection } from "../Utils/Collection";
+import { mkdir, writeFile } from "fs/promises";
 
 export interface TrackerEvents<T> {
     (event: "newScore", listener: (score: RamuneScore) => void): T;
@@ -136,6 +138,7 @@ export class LeagueTracker extends EventEmitter implements Component {
             .flat(1)
             .sort((a, b) => a.id - b.id);
 
+        await this.backup(scores);
         await this.processMany(scores, true, em);
         await em.flush();
     }
@@ -159,6 +162,7 @@ export class LeagueTracker extends EventEmitter implements Component {
             return [];
         }
 
+        await this.backup(scores);
         if (shouldProcess)
             await asyncMap(scores, async score => await this.process(score, true, em));
 
@@ -259,6 +263,16 @@ export class LeagueTracker extends EventEmitter implements Component {
             this.logger.info(`Posting: ${score.id} - ${score.bestID ?? "none"}`);
             this.post(score);
         }
+        return;
+    }
+
+    /** In case the database goes funky wunky, let's store backups */
+    private async backup(scores: RamuneScore[]) {
+        await mkdir("./ignore/scores_backup", { recursive: true });
+        await asyncMap(scores, async score => {
+            const filePath = path.join("./ignore/scores_backup/", score.id.toString() + ".json");
+            await writeFile(filePath, JSON.stringify(score), "utf8");
+        });
         return;
     }
 

@@ -159,7 +159,7 @@ export class FdlAdminCommand extends BaseCommand {
     async mapCmd(ctx: CommandContext) {
         const em = this.database.getManager();
         if (ctx.options.map.add) {
-            await ctx.defer(true);
+            await ctx.defer(this.ephemeralResponses);
 
             const leagueName = ctx.options.map.add.league as string;
             const league = await em.findOne(League, { name: leagueName });
@@ -195,7 +195,7 @@ export class FdlAdminCommand extends BaseCommand {
             return await ctx.send("Maps added", { ephemeral: this.ephemeralResponses });
         }
         if (ctx.options.map.delete) {
-            await ctx.defer(true);
+            await ctx.defer(this.ephemeralResponses);
 
             const ids = ctx.options.map.delete.ids as string;
             const mapIDs = ids.split(",").map(i => parseInt(i));
@@ -260,7 +260,7 @@ export class FdlAdminCommand extends BaseCommand {
         const em = this.database.getManager();
 
         if (ctx.options.player.add) {
-            await ctx.defer(true);
+            await ctx.defer(this.ephemeralResponses);
 
             const ids = ctx.options.player.add.ids as string;
             const discordIDs = ctx.options.player.add.discord_ids as string;

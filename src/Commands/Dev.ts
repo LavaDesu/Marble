@@ -1,11 +1,13 @@
 import * as fs from "fs/promises";
+import * as path from "path";
+import { Score as RamuneScore } from "ramune/lib/Responses";
 import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } from "slash-create";
 import { Blob } from "../Blob";
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { ConfigStore } from "../Components/Stores/ConfigStore";
-import { LeagueStore } from "../Components/Stores/LeagueStore";
 import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
+import { asyncMap } from "../Utils/Helpers";
 import { Logger } from "../Utils/Logger";
 import { BaseCommand, Subcommand } from "./BaseCommand";
 
@@ -16,7 +18,6 @@ export class DevCommand extends BaseCommand {
     protected readonly logger = new Logger("Command/Dev");
 
     @Dependency private readonly discord!: DiscordClient;
-    @Dependency private readonly leagueStore!: LeagueStore;
     @Dependency private readonly tracker!: LeagueTracker;
 
     @ComponentLoad
@@ -47,11 +48,22 @@ export class DevCommand extends BaseCommand {
         await ctx.send("synced");
     }
 
-    @Subcommand("record", "toggle recording of new scores")
-    async record(ctx: CommandContext) {
-        const isRecording = this.tracker.toggleRecord();
-        this.logger.debug("record", isRecording);
-        await ctx.send(isRecording.toString());
+    @Subcommand("migrate", "migrate to new database")
+    async migrate(ctx: CommandContext) {
+        this.logger.debug("migrate");
+        try {
+            const scoreNames = await fs.readdir("./scores");
+            const scores = await asyncMap(scoreNames, async name => {
+                const file = await fs.readFile(path.join("./scores", name), "utf8");
+                const score = JSON.parse(file) as RamuneScore;
+                return score;
+            });
+            await this.tracker.processMany(scores, false);
+            await ctx.send("replayed");
+        } catch(e) {
+            this.logger.error(e);
+            await ctx.send("error :( check console");
+        }
     }
 
     @Subcommand("replay", "replay a score in tracker", [{
@@ -79,7 +91,6 @@ export class DevCommand extends BaseCommand {
         try {
             this.slashInstance.ready = false;
             await this.slashInstance.reloadComponent(ConfigStore);
-            await this.slashInstance.reloadComponent(LeagueStore);
             this.slashInstance.ready = true;
             await this.slashInstance.requestSync();
             // await this.store.load();

@@ -7,11 +7,11 @@ import { LeagueTracker } from "./Components/LeagueTracker";
 import { InviteTracker } from "./Components/InviteTracker";
 import { SlashHandler } from "./Components/SlashHandler";
 import { ConfigStore } from "./Components/Stores/ConfigStore";
-import { LeagueStore } from "./Components/Stores/LeagueStore";
 import { Export, NeedsLoad, Provider } from "./Utils/DependencyInjection";
 import { Logger } from "./Utils/Logger";
 
 import { version as VERSION } from "../package.json";
+import { Database } from "./Components/Database";
 
 export const env = {
     development: process.env.NODE_ENV === "development",
@@ -34,9 +34,9 @@ export class Blob {
     public readonly logger = new Logger("Blob");
 
     @Export private readonly config: ConfigStore;
+    @Export private readonly database: Database;
     @Export private readonly discordClient: DiscordClient;
     @Export private readonly inviteTracker: InviteTracker;
-    @Export private readonly leagueStore: LeagueStore;
     @Export private readonly tracker: LeagueTracker;
 
     @Export private readonly slashHandler: SlashHandler;
@@ -50,15 +50,15 @@ export class Blob {
         this.discordClient = new DiscordClient();
 
         this.config = new ConfigStore();
+        this.database = new Database();
         this.inviteTracker = new InviteTracker();
-        this.leagueStore = new LeagueStore();
         this.slashHandler = new SlashHandler();
         this.tracker = new LeagueTracker();
         this.ramune = new Ramune(env.osuID, env.osuSecret, {
             requestHandler: {
                 rateLimit: {
-                    limit: 500,
-                    interval: 60e3
+                    limit: 5,
+                    interval: 1
                 }
             }
         });

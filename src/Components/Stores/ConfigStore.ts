@@ -2,14 +2,16 @@ import * as fs from "fs/promises";
 import type { ScoreRank } from "ramune";
 import { Component, ComponentLoad } from "../../Utils/DependencyInjection";
 import { Logger } from "../../Utils/Logger";
-import type { LeagueConfig } from "./LeagueStore";
 
-export type Config = MainConfig & LeagueConfig;
-
-interface MainConfig {
+export interface Config {
     commandGuilds: string[];
+    fdl: FdlSettings;
     inviteTracking: InviteTrackingSettings;
     rankEmotes: { [name in ScoreRank]: string };
+}
+interface FdlSettings {
+    admins: string[];
+    guild: string;
 }
 interface InviteTrackingSettings {
     guilds: Record<string, string>;
@@ -21,6 +23,7 @@ export class ConfigStore implements Component {
 
     private config!: Config;
     private commandGuilds: string[] = [];
+    private fdl: FdlSettings = { admins: [], guild: "" };
     private inviteTracking: InviteTrackingSettings = { guilds: {} };
     private rankEmotes!: { [name in ScoreRank]: string };
 
@@ -31,6 +34,7 @@ export class ConfigStore implements Component {
         this.config = config;
 
         this.commandGuilds = config.commandGuilds;
+        this.fdl = config.fdl;
         this.inviteTracking = config.inviteTracking;
         this.rankEmotes = config.rankEmotes;
     }
@@ -45,6 +49,9 @@ export class ConfigStore implements Component {
 
     public getCommandGuilds() {
         return this.commandGuilds;
+    }
+    public getFdlSettings() {
+        return this.fdl;
     }
     public getInviteTrackingSettings() {
         return this.inviteTracking;

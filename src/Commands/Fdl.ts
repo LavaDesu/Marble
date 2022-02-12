@@ -1,11 +1,13 @@
 import { ButtonStyle, CommandContext, CommandOptionType, ComponentActionRow, ComponentType, EmbedField, MessageEmbedOptions, MessageOptions } from "slash-create";
+import { Database } from "../Components/Database";
 import { DiscordClient } from "../Components/Discord";
-import { LeagueTracker } from "../Components/LeagueTracker";
 import { ConfigStore } from "../Components/Stores/ConfigStore";
-import { League, LeagueMap, LeaguePlayer, LeagueStore, LeagueWeek } from "../Components/Stores/LeagueStore";
+import { League } from "../Database/Entities/League";
+import { Map } from "../Database/Entities/Map";
+import { User } from "../Database/Entities/User";
 import { Collection } from "../Utils/Collection";
 import { Component, Dependency, LazyDependency } from "../Utils/DependencyInjection";
-import { sanitiseDiscord } from "../Utils/Helpers";
+import { group, sanitiseDiscord } from "../Utils/Helpers";
 import { BaseCommand, Subcommand } from "./BaseCommand";
 
 @Component("Command/Fdl")
@@ -14,9 +16,8 @@ export class FdlCommand extends BaseCommand {
     protected description = "Commands related to the 5 digit league";
 
     @Dependency private readonly config!: ConfigStore;
+    @Dependency private readonly database!: Database;
     @LazyDependency private readonly discord!: DiscordClient;
-    @Dependency private readonly leagueStore!: LeagueStore;
-    @Dependency private readonly tracker!: LeagueTracker;
 
     protected setupOptions() {
         return {
@@ -32,10 +33,13 @@ export class FdlCommand extends BaseCommand {
         required: false
     }])
     public async scores(ctx: CommandContext) {
+        const em = this.database.getManager();
         this.discord.componentQueue.add(ctx);
+        await ctx.defer();
 
-        const map = ctx.options.scores.id
-            ? this.leagueStore.getMap(ctx.options.scores.id)
+        const id = ctx.options.scores.id as number | undefined;
+        const map = id
+            ? await em.findOne(Map, id, { populate: ["scores", "scores.user"] })
             : await this.promptScores(ctx);
 
         if (!map) {
@@ -46,43 +50,41 @@ export class FdlCommand extends BaseCommand {
                 }],
                 components: []
             };
-            if (ctx.messageID)
+            if (ctx.initiallyResponded)
                 ctx.editOriginal(msg);
             else
                 ctx.send(msg);
             return;
         }
 
-        const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
-        if (sender)
-            await this.tracker.refreshPlayer(sender.osu.id);
+        // TODO
+        // const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
+        // if (sender)
+        //     await this.tracker.refreshPlayer(sender.osu.id);
 
-        const scores = this.tracker.getMapScores(map.map.id)?.valuesAsArray() ?? [];
-
-        const fields: EmbedField[] = scores
-            .filter(score => map.league.players.has(score.user!.id))
+        const fields: EmbedField[] = map.scores.getItems()
             .sort((a, b) => b.score - a.score)
             .map((score, rank) => ({
                 name: `#${rank + 1} - **${score.user!.username}**`,
                 value: [
                     `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
                     `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
-                    `Rank: ${this.config.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
-                    `Combo: **${score.max_combo}**/${map.map.maxCombo!}x`,
-                    `Set <t:${(new Date(score.created_at).getTime() / 1000).toString()}:R>`,
-                    score.best_id ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})` : undefined
+                    `Rank: ${this.config.getRankEmote(score.rank)!} - ${score.count300}/${score.count100}/${score.count50}/${score.countmiss}`,
+                    `Combo: **${score.combo}**/${map.maxCombo}x`,
+                    `Set <t:${(new Date(score.createdAt).getTime() / 1000).toString()}:R>`,
+                    score.bestID ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.bestID})` : undefined
                 ].filter(s => s !== undefined).join("\n")
             }));
 
         const embed: MessageEmbedOptions = {
-            title: `${map.beatmapset.artist} - ${map.beatmapset.title} [${map.map.version}]`,
-            url: `https://osu.ppy.sh/b/${map.map.id}`,
-            thumbnail: { url: `https://b.ppy.sh/thumb/${map.beatmapset.id}l.jpg` },
+            title: `${map.artist} - ${map.title} [${map.diff}]`,
+            url: `https://osu.ppy.sh/b/${map.id}`,
+            thumbnail: { url: `https://b.ppy.sh/thumb/${map.setID}l.jpg` },
             description: [
                 `League = ${map.league.name}`,
-                `Week = ${map.week.number}`,
-                `Map ID = ${map.map.id}`,
-                `Required Mods = ${this.leagueStore.getFriendlyMods(map.map.id)}`
+                `Week = ${map.week}`,
+                `Map ID = ${map.id}`,
+                `Required Mods = \`${map.modExpression ?? "Freemod"}\``
             ].join("\n"),
             fields: fields.slice(0, 3)
         };
@@ -118,14 +120,17 @@ export class FdlCommand extends BaseCommand {
         });
     }
 
-    private async promptScores(ctx: CommandContext) {
-        let resolve: (map: LeagueMap) => void;
-        const promise: Promise<LeagueMap> = new Promise(r => resolve = r);
+    private async promptScores(ctx: CommandContext): Promise<Map> {
+        const em = this.database.getManager();
 
-        const player = this.leagueStore.getPlayerByDiscord(ctx.user.id);
-        let league = player ? player.league : this.leagueStore.getLeagues().valuesAsArray()[0];
-        let week: LeagueWeek;
-        let map: LeagueMap;
+        let resolve: (map: Map) => void;
+        const promise: Promise<Map> = new Promise(r => resolve = r);
+
+        const leagues = await em.find(League, {}, { populate: ["maps", "maps.scores", "maps.scores.user"] });
+        // TODO db-rewrite-discord
+        // const player = this.leagueStore.getPlayerByDiscord(ctx.user.id);
+        // let league = player ? player.league : this.leagueStore.getLeagues().valuesAsArray()[0];
+        let league = leagues[0];
 
         await ctx.fetch();
 
@@ -136,25 +141,10 @@ export class FdlCommand extends BaseCommand {
                 custom_id: "select_league",
                 min_values: 1,
                 max_values: 1,
-                options: this.leagueStore.getLeagues().map(mapLeague => ({
-                    label: `${mapLeague.name} League`,
-                    value: mapLeague.name,
-                    default: league === mapLeague
-                }))
-            }]
-        });
-        const selectWeekComponent = (): ComponentActionRow => ({
-            type: ComponentType.ACTION_ROW,
-            components: [{
-                type: ComponentType.SELECT,
-                custom_id: "select_week",
-                placeholder: "Select a week",
-                min_values: 1,
-                max_values: 1,
-                options: league.weeks.map(mapWeek => ({
-                    label: `Week ${mapWeek.number.toString()}`,
-                    value: mapWeek.number.toString(),
-                    default: week === mapWeek
+                options: leagues.map(subLeague => ({
+                    label: `${subLeague.name} League`,
+                    value: subLeague.name,
+                    default: league === subLeague
                 }))
             }]
         });
@@ -166,12 +156,14 @@ export class FdlCommand extends BaseCommand {
                 placeholder: "Select a map",
                 min_values: 1,
                 max_values: 1,
-                options: week.maps.map((weekMap, id, index) => ({
-                    label: `Map ${(index + 1).toString()} (${id.toString()})`,
-                    description: weekMap.beatmapset.title,
-                    value: weekMap.map.id.toString(),
-                    default: false
-                }))
+                options: group(league.maps.getItems(), map => map.week)
+                    .map(week => week.map((map, index) => ({
+                        label: `Week ${map.week} Map ${index + 1} - (${map.id})`,
+                        description: map.title,
+                        value: map.id.toString(),
+                        default: false
+                    })))
+                    .flat(1)
             }]
         });
 
@@ -179,53 +171,38 @@ export class FdlCommand extends BaseCommand {
             embeds: [{
                 description: `League = ${league.name}`
             }],
-            components: [selectLeagueComponent(), selectWeekComponent()]
+            components: [selectLeagueComponent(), selectMapComponent()]
         });
 
         ctx.registerComponent("select_league", async selectCtx => {
-            league = this.leagueStore.getLeague(selectCtx.values.join(""))!;
+            league = await em.findOneOrFail(League, { name: selectCtx.values.join("") }, { populate: ["maps", "maps.scores"] });
             await selectCtx.editParent({
                 embeds: [{
                     description: `League = ${league.name}`
                 }],
-                components: [selectLeagueComponent(), selectWeekComponent()]
-            });
-        });
-        ctx.registerComponent("select_week", async selectCtx => {
-            const weekPos = parseInt(selectCtx.values.join(""));
-            week = league.weeks.get(weekPos)!;
-            await selectCtx.editParent({
-                embeds: [{
-                    description: [
-                        `League = ${league.name}`,
-                        `Week = ${week.number}`
-                    ].join("\n")
-                }],
-                components: [selectLeagueComponent(), selectWeekComponent(), selectMapComponent()]
+                components: [selectLeagueComponent(), selectMapComponent()]
             });
         });
         ctx.registerComponent("select_map", selectCtx => {
             const mapID = parseInt(selectCtx.values.join(""));
-            map = week.maps.get(mapID)!;
-            resolve!(map);
+            resolve!(league.maps.getItems().find(map => map.id === mapID)!);
         });
 
         return promise;
     }
 
-    // TODO: update this dynamically instead of regenerating
-    private getLeaderboards(league: League, sender?: LeaguePlayer) {
-        const maps = this.tracker.getScores();
+    private async getLeaderboards(league: League, sender?: User) {
+        const em = this.database.getManager();
+        const maps = await em.find(Map, { league }, { populate: ["scores", "scores.user"] });
 
         const points: Collection<string, number> = new Collection();
         maps.forEach(map => {
-            map.valuesAsArray()
-                .filter(score => league.players.has(score.user!.id))
+            map.scores.getItems()
                 .sort((a, b) => b.score - a.score)
                 .slice(0, 3)
                 .forEach((score, index) => {
                     let name = sanitiseDiscord(score.user!.username);
-                    if (sender && score.user!.id === sender.osu.id)
+                    if (sender && score.user!.id === sender.id)
                         name = `__${name}__`;
 
                     const p = points.getOrSet(name, 0);
@@ -250,13 +227,15 @@ export class FdlCommand extends BaseCommand {
             await ctx.editOriginal("Unknown league");
             return;
         }*/
-        const league = this.leagueStore.getLeagues().valuesAsArray()[0];
+        const em = this.database.getManager();
+        const league = (await em.find(League, {}, { limit: 1 }))[0];
 
-        const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
+        // TODO: db-rewrite-discord
+        /*const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
         if (sender)
-            await this.tracker.refreshPlayer(sender.osu.id);
+            await this.tracker.refreshPlayer(sender.osu.id);*/
 
-        const points = this.getLeaderboards(league, sender);
+        const points = await this.getLeaderboards(league, undefined);
 
         const fields = [
             {
@@ -290,19 +269,24 @@ export class FdlCommand extends BaseCommand {
     // TODO: similar to above: multi-league
     @Subcommand("pool", "Gets the current league mappool")
     public async pool(ctx: CommandContext) {
-        const league = this.leagueStore.getLeagues().valuesAsArray()[0];
+        const em = this.database.getManager();
+        const league = (await em.find(League, {}, { limit: 1, populate: ["maps"] }))[0];
 
+        const weeks = group(league.maps.getItems(), map => map.week);
+
+        const embed = {
+            author: { name: `${league.name} League` },
+            fields: weeks.map((maps, week) => ({
+                name: `Week ${week}`,
+                value: maps
+                    .map(map => `[${map.artist} - **${map.title}** \\[${map.diff}\\]](https://osu.ppy.sh/b/${map.id})`)
+                    .join("\n"),
+                inline: false
+            })).filter(i => i)
+        };
+        console.log(embed);
         await ctx.send({
-            embeds: [{
-                author: { name: `${league.name} League` },
-                fields: league.weeks.map(week => ({
-                    name: `Week ${week.number}`,
-                    value: week.maps
-                        .map(map => `[${map.beatmapset.artist} - **${map.beatmapset.title}** \\[${map.map.version}\\]](https://osu.ppy.sh/b/${map.map.id})`)
-                        .join("\n"),
-                    inline: false
-                }))
-            }]
+            embeds: [embed]
         });
     }
 
@@ -313,11 +297,14 @@ export class FdlCommand extends BaseCommand {
         required: false
     }])
     public async player(ctx: CommandContext) {
-        let player: LeaguePlayer | undefined;
+        const em = this.database.getManager();
+        let player: User | undefined | null;
+        const username = ctx.options.player.username as string | undefined;
         if (ctx.options.player.username)
-            player = this.leagueStore.getPlayers().find(user => user.osu.username === ctx.options.player.username);
-        else
-            player = this.leagueStore.getPlayerByDiscord(ctx.user.id);
+            player = await em.findOne(User, { username }, { populate: ["league.maps", "league.maps.scores"] });
+        // TODO db-rewrite-discord
+        /*else
+            player = this.leagueStore.getPlayerByDiscord(ctx.user.id);*/
 
         if (!player) {
             await ctx.send("Player not found!", {
@@ -325,7 +312,6 @@ export class FdlCommand extends BaseCommand {
             });
             return;
         }
-        const league = player.league;
 
         const fields = [
             {
@@ -340,18 +326,16 @@ export class FdlCommand extends BaseCommand {
             }
         ];
 
-        const scores = this.tracker.getScores();
+        const weeks = group(player.league.maps.getItems(), map => map.week);
+        weeks.forEach(week => {
+            week.forEach(map => {
+                fields[0].value += `[${map.title}](https://osu.ppy.sh/b/${map.id})\n`;
 
-        league.weeks.forEach(week => {
-            week.maps.forEach(map => {
-                fields[0].value += `[${map.beatmapset.title}](https://osu.ppy.sh/b/${map.map.id})\n`;
-
-                let index = scores.get(map.map.id)!.valuesAsArray()
-                    .filter(score => league.players.has(score.user!.id))
+                let index = map.scores.getItems()
                     .sort((a, b) => b.score - a.score)
                     .slice(0, 3)
-                    .map(score => score.user!.username)
-                    .indexOf(player!.osu.username);
+                    .map(score => score.user!.id)
+                    .indexOf(player!.id);
                 if (index < 0)
                     index = 3;
 
@@ -365,8 +349,8 @@ export class FdlCommand extends BaseCommand {
         await ctx.send({
             embeds: [{
                 author: {
-                    name: sanitiseDiscord(player.osu.username),
-                    icon_url: `https://s.ppy.sh/a/${player.osu.id}`
+                    name: sanitiseDiscord(player.username),
+                    icon_url: `https://s.ppy.sh/a/${player.id}`
                 },
                 fields
             }]

@@ -8,6 +8,7 @@ tsconfig.tsbuildinfo
 .direnv
 
 # Data
+Blob.db
 data.json
 ignore/
 scores/

@@ -1,6 +1,7 @@
 import { ButtonStyle, CommandContext, CommandOptionType, ComponentActionRow, ComponentType, EmbedField, MessageEmbedOptions, MessageOptions } from "slash-create";
 import { Database } from "../Components/Database";
 import { DiscordClient } from "../Components/Discord";
+import { LeagueTracker } from "../Components/LeagueTracker";
 import { ConfigStore } from "../Components/Stores/ConfigStore";
 import { League } from "../Database/Entities/League";
 import { Map } from "../Database/Entities/Map";
@@ -18,6 +19,7 @@ export class FdlCommand extends BaseCommand {
     @Dependency private readonly config!: ConfigStore;
     @Dependency private readonly database!: Database;
     @LazyDependency private readonly discord!: DiscordClient;
+    @Dependency private readonly tracker!: LeagueTracker;
 
     protected setupOptions() {
         return {
@@ -57,10 +59,9 @@ export class FdlCommand extends BaseCommand {
             return;
         }
 
-        // TODO
-        // const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
-        // if (sender)
-        //     await this.tracker.refreshPlayer(sender.osu.id);
+        const sender = await em.findOne(User, { discordID: ctx.user.id });
+        if (sender)
+            await this.tracker.refreshPlayer(sender);
 
         const fields: EmbedField[] = map.scores.getItems()
             .sort((a, b) => b.score - a.score)
@@ -127,10 +128,8 @@ export class FdlCommand extends BaseCommand {
         const promise: Promise<Map> = new Promise(r => resolve = r);
 
         const leagues = await em.find(League, {}, { populate: ["maps", "maps.scores", "maps.scores.user"] });
-        // TODO db-rewrite-discord
-        // const player = this.leagueStore.getPlayerByDiscord(ctx.user.id);
-        // let league = player ? player.league : this.leagueStore.getLeagues().valuesAsArray()[0];
-        let league = leagues[0];
+        const player = await em.findOne(User, { discordID: ctx.user.id });
+        let league = player ? player.league : leagues[0];
 
         await ctx.fetch();
 
@@ -230,10 +229,9 @@ export class FdlCommand extends BaseCommand {
         const em = this.database.getManager();
         const league = (await em.find(League, {}, { limit: 1 }))[0];
 
-        // TODO: db-rewrite-discord
-        /*const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
+        const sender = await em.findOne(User, { discordID: ctx.user.id });
         if (sender)
-            await this.tracker.refreshPlayer(sender.osu.id);*/
+            await this.tracker.refreshPlayer(sender);
 
         const points = await this.getLeaderboards(league, undefined);
 
@@ -302,9 +300,8 @@ export class FdlCommand extends BaseCommand {
         const username = ctx.options.player.username as string | undefined;
         if (ctx.options.player.username)
             player = await em.findOne(User, { username }, { populate: ["league.maps", "league.maps.scores"] });
-        // TODO db-rewrite-discord
-        /*else
-            player = this.leagueStore.getPlayerByDiscord(ctx.user.id);*/
+        else
+            player = await em.findOne(User, { discordID: ctx.user.id }, { populate: ["league.maps", "league.maps.scores"] });
 
         if (!player) {
             await ctx.send("Player not found!", {

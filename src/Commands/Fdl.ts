@@ -282,7 +282,6 @@ export class FdlCommand extends BaseCommand {
                 inline: false
             })).filter(i => i)
         };
-        console.log(embed);
         await ctx.send({
             embeds: [embed]
         });

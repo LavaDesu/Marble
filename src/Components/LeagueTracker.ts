@@ -212,7 +212,7 @@ export class LeagueTracker extends EventEmitter implements Component {
 
         const postQueue: Score[] | undefined = shouldPost ? [] : undefined;
 
-        const previousScores = await em.find(Score, { $or: orMap });
+        const previousScores = (await em.find(Score, { $or: orMap })).sort((a, b) => b.score - a.score);
         const filtered = ret.map(coll => coll.valuesAsArray()).flat(1);
         filtered.forEach(score => {
             const prev = previousScores.find(ps => ps.user?.id === score.user_id && ps.map?.id === score.beatmap!.id);

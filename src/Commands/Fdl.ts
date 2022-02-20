@@ -2,7 +2,7 @@ import { ButtonStyle, CommandContext, CommandOptionType, ComponentActionRow, Com
 import { Database } from "../Components/Database";
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { ConfigStore } from "../Components/Stores/ConfigStore";
+import { Config } from "../Config";
 import { League } from "../Database/Entities/League";
 import { Map } from "../Database/Entities/Map";
 import { User } from "../Database/Entities/User";
@@ -16,7 +16,6 @@ export class FdlCommand extends BaseCommand {
     protected name = "5dl";
     protected description = "Commands related to the 5 digit league";
 
-    @Dependency private readonly config!: ConfigStore;
     @Dependency private readonly database!: Database;
     @LazyDependency private readonly discord!: DiscordClient;
     @Dependency private readonly tracker!: LeagueTracker;
@@ -24,7 +23,7 @@ export class FdlCommand extends BaseCommand {
     protected setupOptions() {
         return {
             defaultPermission: true,
-            guildIDs: this.config.getCommandGuilds()
+            guildIDs: Config.commandGuilds
         };
     }
 
@@ -70,7 +69,7 @@ export class FdlCommand extends BaseCommand {
                 value: [
                     `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
                     `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
-                    `Rank: ${this.config.getRankEmote(score.rank)!} - ${score.count300}/${score.count100}/${score.count50}/${score.countmiss}`,
+                    `Rank: ${Config.rankEmotes[score.rank]!} - ${score.count300}/${score.count100}/${score.count50}/${score.countmiss}`,
                     `Combo: **${score.combo}**/${map.maxCombo}x`,
                     `Set <t:${(new Date(score.createdAt).getTime() / 1000).toString()}:R>`,
                     score.bestID ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.bestID})` : undefined

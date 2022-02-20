@@ -1,10 +1,9 @@
 import { Ramune } from "ramune";
 import { BeatmapExtended, BeatmapsetExtended } from "ramune/lib/Responses";
 import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } from "slash-create";
-import { Blob } from "../Blob";
 import { Database } from "../Components/Database";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { ConfigStore } from "../Components/Stores/ConfigStore";
+import { Config } from "../Config";
 import { League } from "../Database/Entities/League";
 import { Map } from "../Database/Entities/Map";
 import { User } from "../Database/Entities/User";
@@ -19,25 +18,23 @@ export class FdlAdminCommand extends BaseCommand {
 
     protected readonly ephemeralResponses = false;
 
-    @Dependency private readonly config!: ConfigStore;
     @Dependency private readonly database!: Database;
     @LazyDependency private readonly league!: LeagueTracker;
     @Dependency private readonly ramune!: Ramune;
 
     protected setupOptions() {
-        const fdl = this.config.getFdlSettings();
         return {
             defaultPermission: false,
-            guildIDs: this.config.getCommandGuilds(),
+            guildIDs: Config.commandGuilds,
             permissions: {
-                [Blob.Environment.devGuild]: [
+                [Config.devGuildID]: [
                     {
                         type: ApplicationCommandPermissionType.USER,
-                        id: Blob.Environment.devID,
+                        id: Config.devID,
                         permission: true
                     }
                 ],
-                [fdl.guild]: fdl.admins.map(id => ({
+                [Config.fdl.guild]: Config.fdl.admins.map(id => ({
                     id,
                     type: ApplicationCommandPermissionType.USER,
                     permission: true

@@ -12,8 +12,6 @@ import {
 import type { Score as RamuneScore } from "ramune/lib/Responses";
 import { MessageEmbedOptions } from "slash-create";
 
-import { Blob } from "../Blob";
-import { ConfigStore } from "./Stores/ConfigStore";
 import { asyncMap } from "../Utils/Helpers";
 import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
@@ -24,6 +22,7 @@ import { Map } from "../Database/Entities/Map";
 import { EntityManager } from "@mikro-orm/core";
 import { Collection } from "../Utils/Collection";
 import { mkdir, writeFile } from "fs/promises";
+import { Config } from "../Config";
 
 export interface TrackerEvents<T> {
     (event: "newScore", listener: (score: RamuneScore) => void): T;
@@ -36,7 +35,6 @@ export interface LeagueTracker {
 export class LeagueTracker extends EventEmitter implements Component {
     private readonly logger = new Logger("Tracker/League");
 
-    @Dependency private readonly config!: ConfigStore;
     @Dependency private readonly database!: Database;
     @Dependency private readonly ramune!: Ramune;
 
@@ -49,8 +47,8 @@ export class LeagueTracker extends EventEmitter implements Component {
         }
     });
     private readonly webhook = {
-        id: Blob.Environment.webhookID,
-        token: Blob.Environment.webhookToken
+        id: Config.webhookID,
+        token: Config.webhookToken
     };
 
     @ComponentLoad
@@ -82,7 +80,7 @@ export class LeagueTracker extends EventEmitter implements Component {
                     )).score;
                 } catch (error) {
                     if (
-                        error?.type === "network" &&
+                        (error as any).type === "network" &&
                         (error as RequestNetworkError).code === 404
                     )
                         return;
@@ -298,7 +296,7 @@ export class LeagueTracker extends EventEmitter implements Component {
                     value: [
                         `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
                         `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
-                        `Rank: ${this.config.getRankEmote(score.rank)!} - ${score.count300}/${score.count100}/${score.count50}/${score.countmiss}`,
+                        `Rank: ${Config.rankEmotes[score.rank]!} - ${score.count300}/${score.count100}/${score.count50}/${score.countmiss}`,
                         `Combo: **${score.combo}**/${score.map.maxCombo?.toString() ?? "0"}x`,
                         score.bestID ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.bestID})` : undefined
                     ].filter(i => i !== undefined).join("\n")

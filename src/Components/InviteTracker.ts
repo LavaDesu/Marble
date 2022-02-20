@@ -1,16 +1,15 @@
 import { Guild, Invite, Member } from "eris";
 import { DiscordClient } from "./Discord";
 import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
-import { ConfigStore } from "./Stores/ConfigStore";
 import { Collection } from "../Utils/Collection";
 import { asyncForEach } from "../Utils/Helpers";
 import { Logger } from "../Utils/Logger";
+import { Config } from "../Config";
 
 @Component("Tracker/Invite")
 export class InviteTracker implements Component {
     private readonly logger = new Logger("Tracker/Invite");
 
-    @Dependency private readonly config!: ConfigStore;
     @Dependency private readonly discord!: DiscordClient;
 
     /** format: Collection<GuildID, Collection<InviteCode, InviteUses>> */
@@ -22,7 +21,7 @@ export class InviteTracker implements Component {
 
     @ComponentLoad
     public async load() {
-        const settings = this.config.getInviteTrackingSettings();
+        const settings = Config.inviteTracking;
         const guildIDs = Object.keys(settings.guilds);
 
         let inviteCount = 0;
@@ -44,7 +43,7 @@ export class InviteTracker implements Component {
     }
 
     private async handleMemberAdd(guild: Guild, member: Member) {
-        const settings = this.config.getInviteTrackingSettings();
+        const settings = Config.inviteTracking;
 
         if (!(guild.id in settings.guilds))
             return;

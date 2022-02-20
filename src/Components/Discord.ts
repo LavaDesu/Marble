@@ -1,7 +1,7 @@
 import { Client, Constants as ErisConstants } from "eris";
 import { CommandContext } from "slash-create";
 
-import { Blob } from "../Blob";
+import { Config } from "../Config";
 import { Component, ComponentLoad } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { Queue } from "../Utils/Queue";
@@ -13,7 +13,7 @@ export class DiscordClient extends Client implements Component {
     public componentQueue!: Queue<CommandContext>;
 
     constructor() {
-        super(Blob.Environment.botToken, {
+        super(Config.botToken, {
             maxShards: "auto",
             defaultImageFormat: "png",
             defaultImageSize: 2048,

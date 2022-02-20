@@ -8,6 +8,7 @@ import { PingCommand } from "../Commands/Ping";
 import { SnipeCommand } from "../Commands/Snipe";
 import { FdlCommand } from "../Commands/Fdl";
 import { FdlAdminCommand } from "../Commands/FdlAdmin";
+import { Config } from "../Config";
 
 export interface SlashHandler extends Provider {}
 @Provider
@@ -27,9 +28,9 @@ export class SlashHandler extends SlashCreator {
 
     constructor() {
         super({
-            applicationID: Blob.Environment.botID,
-            publicKey: Blob.Environment.botKey,
-            token: Blob.Environment.botToken
+            applicationID: Config.botID,
+            publicKey: Config.botKey,
+            token: Config.botToken
         });
 
         this
@@ -81,7 +82,7 @@ export class SlashHandler extends SlashCreator {
     }
 
     async unload() {
-        if (!Blob.Environment.development)
+        if (!Config.debug)
             await this.syncCommandsPromise();
     }
 
@@ -115,7 +116,7 @@ export class SlashHandler extends SlashCreator {
                 await this.syncCommandsIn(guildID, options.deleteCommands);
             } catch (e) {
                 if (options.skipGuildErrors)
-                    this.emit("warn", `An error occurred during guild sync (${guildID}): ${e.message as string}`);
+                    this.emit("warn", `An error occurred during guild sync (${guildID}): ${(e as any).message as string}`);
                 else
                     throw e;
             }
@@ -126,7 +127,7 @@ export class SlashHandler extends SlashCreator {
             try {
                 await this.syncCommandPermissions();
             } catch (e) {
-                this.emit("error", e);
+                this.emit("error", e as Error);
             }
 
         this.emit("synced");

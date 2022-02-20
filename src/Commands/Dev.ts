@@ -2,10 +2,9 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { Score as RamuneScore } from "ramune/lib/Responses";
 import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } from "slash-create";
-import { Blob } from "../Blob";
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { ConfigStore } from "../Components/Stores/ConfigStore";
+import { Config } from "../Config";
 import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
 import { asyncMap } from "../Utils/Helpers";
 import { Logger } from "../Utils/Logger";
@@ -28,12 +27,12 @@ export class DevCommand extends BaseCommand {
     protected setupOptions() {
         return {
             defaultPermission: false,
-            guildIDs: Blob.Environment.devGuild,
+            guildIDs: Config.devGuildID,
             permissions: {
-                [Blob.Environment.devGuild]: [
+                [Config.devGuildID]: [
                     {
                         type: ApplicationCommandPermissionType.USER,
-                        id: Blob.Environment.devID,
+                        id: Config.devID,
                         permission: true
                     }
                 ]
@@ -79,23 +78,6 @@ export class DevCommand extends BaseCommand {
             const score = JSON.parse(file);
             await this.tracker.process(score);
             await ctx.send("replayed");
-        } catch(e) {
-            this.logger.error(e);
-            await ctx.send("error :( check console");
-        }
-    }
-
-    @Subcommand("reload", "reloads store data")
-    async reload(ctx: CommandContext) {
-        this.logger.debug("reload");
-        try {
-            this.slashInstance.ready = false;
-            await this.slashInstance.reloadComponent(ConfigStore);
-            this.slashInstance.ready = true;
-            await this.slashInstance.requestSync();
-            // await this.store.load();
-            // await this.tracker.syncScores();
-            await ctx.send("a ok");
         } catch(e) {
             this.logger.error(e);
             await ctx.send("error :( check console");

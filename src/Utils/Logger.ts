@@ -1,4 +1,4 @@
-import { Blob } from "../Blob";
+import { Config } from "../Config";
 
 export class Logger {
     private readonly name?: string;
@@ -40,7 +40,7 @@ export class Logger {
     }
 
     debug(...data: unknown[]) {
-        if (!Blob.Environment.development)
+        if (!Config.debug)
             return;
 
         const msg = this.format("D", data);

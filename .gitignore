@@ -9,6 +9,7 @@ tsconfig.tsbuildinfo
 
 # Data
 Blob.db
+config.json
 data.json
 ignore/
 scores/

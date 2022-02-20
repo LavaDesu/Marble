@@ -107,12 +107,13 @@ export class LeagueTracker extends EventEmitter implements Component {
         const players = await em.find(User, {});
         await asyncMap(players, async player => {
             const cursor = this.ramune.getUserScores(player.id, ScoreType.Recent, Gamemode.Osu);
-            let update: number | undefined;
+            let update: string | undefined;
             for await (const score of cursor.iterate(20)) {
-                if (score.id === player.lastPlayID)
+                const stringID = score.id.toString();
+                if (stringID === player.lastPlayID)
                     break;
 
-                update ??= score.id;
+                update ??= stringID;
                 lostScores.push(score);
             }
             if (update)
@@ -146,15 +147,18 @@ export class LeagueTracker extends EventEmitter implements Component {
 
         try {
             const cursor = this.ramune.getUserScores(player.id, ScoreType.Recent, Gamemode.Osu);
+            let update: string | undefined;
             for await (const score of cursor.iterate(1)) {
-                if (score.id === player.lastPlayID)
+                const stringID = score.id.toString();
+                if (stringID === player.lastPlayID)
                     break;
 
+                update ??= stringID;
                 scores.push(score);
             }
-            if (scores.length)
+            if (update)
                 // not immediately flushed but it will be
-                player.lastPlayID = scores[0].id;
+                player.lastPlayID = update;
         } catch(e) {
             this.logger.error("Error getting user scores", player, e);
             return [];
@@ -248,7 +252,7 @@ export class LeagueTracker extends EventEmitter implements Component {
             return;
 
         const previousScore = await em.findOne(Score, { map: rawScore.beatmap!.id, user });
-        if (rawScore.id === previousScore?.id || rawScore.score < previousScore?.score!)
+        if (rawScore.id.toString() === previousScore?.id || rawScore.score < previousScore?.score!)
             return;
 
         const score = new Score(rawScore);
@@ -266,9 +270,9 @@ export class LeagueTracker extends EventEmitter implements Component {
 
     /** In case the database goes funky wunky, let's store backups */
     private async backup(scores: RamuneScore[]) {
-        await mkdir("./ignore/scores_backup", { recursive: true });
+        await mkdir(Config.fdl.backupPath, { recursive: true });
         await asyncMap(scores, async score => {
-            const filePath = path.join("./ignore/scores_backup/", score.id.toString() + ".json");
+            const filePath = path.join(Config.fdl.backupPath, score.id.toString() + ".json");
             await writeFile(filePath, JSON.stringify(score), "utf8");
         });
         return;

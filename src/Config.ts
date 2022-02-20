@@ -38,6 +38,22 @@ export interface Config {
     osuSecret: string;
 
 
+    /** PostgreSql database name */
+    dbName: string;
+
+    /** PostgreSql host */
+    dbHost?: string;
+
+    /** PostgreSql username */
+    dbUser?: string;
+
+    /** PostgreSql password */
+    dbPassword?: string;
+
+    /** Mikro-ORM entity cache directory */
+    dbCache: string;
+
+
     /** Guild IDs that can use commands */
     commandGuilds: string[];
 
@@ -45,8 +61,12 @@ export interface Config {
     fdl: {
         /** Admins of 5dl */
         admins: string[];
+
         /** Guild where 5dl is being hosted at */
         guild: string;
+
+        /** Score backup path */
+        backupPath: string;
     };
 
     /** Invite tracking config */
@@ -78,10 +98,14 @@ export const Config: Config = {
     osuID: 0,
     osuSecret: "",
 
+    dbName: "blob",
+    dbCache: "./ignore/db_cache",
+
     commandGuilds: [],
     fdl: {
         admins: [],
-        guild: ""
+        guild: "",
+        backupPath: "./ignore/scores_backup"
     },
     inviteTracking: {
         guilds: {}

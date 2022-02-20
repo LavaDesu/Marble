@@ -1,20 +1,31 @@
-import type { MikroORM } from "@mikro-orm/core";
+import type { Configuration, IDatabaseDriver, Options } from "@mikro-orm/core";
+import type { PostgreSqlDriver } from "@mikro-orm/postgresql";
 import { TsMorphMetadataProvider } from "@mikro-orm/reflection";
+import { Config } from "../Config";
 import { CustomMigrationGenerator } from "./CustomMigrationGenerator";
 
-const config: Parameters<(typeof MikroORM)["init"]>[0] = {
+type ORMConfig<D extends IDatabaseDriver = IDatabaseDriver> = Options<D> | Configuration<D>;
+const config: ORMConfig<PostgreSqlDriver> = {
+    dbName: Config.dbName,
+    host: Config.dbHost,
+    user: Config.dbUser,
+    password: Config.dbPassword,
+
     migrations: {
         path: "out/Migrations",
         pathTs: "src/Migrations",
-        generator: CustomMigrationGenerator
+        generator: CustomMigrationGenerator,
+        disableForeignKeys: false
+    },
+    schemaGenerator: {
+        disableForeignKeys: false
     },
     metadataProvider: TsMorphMetadataProvider,
     entities: ["./out/Database/Entities"],
     entitiesTs: ["./src/Database/Entities"],
-    dbName: "Blob.db",
-    type: "sqlite" as const,
+    type: "postgresql" as const,
     debug: process.env.NODE_ENV === "development",
-    cache: { options: { cacheDir: "./ignore/db_cache" } }
+    cache: { options: { cacheDir: Config.dbCache } }
 };
 
 /* eslint-disable-next-line import/no-default-export */

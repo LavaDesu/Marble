@@ -6,12 +6,7 @@ export class CustomMigrationGenerator extends TSMigrationGenerator {
         up: string[];
         down: string[];
     }): string {
-        let file = super.generateMigrationFile(className, diff);
-        file = file
-            .replaceAll("  ", "    ")
-            .replaceAll("'", '"');
-
-        return file;
+        return "/* eslint-disable */\n" + super.generateMigrationFile(className, diff);
     };
 
 }

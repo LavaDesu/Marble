@@ -1,4 +1,4 @@
-import { Collection, Entity, ManyToOne, OneToMany, PrimaryKey, Property } from "@mikro-orm/core";
+import { Collection, Entity, ManyToOne, OneToMany, PrimaryKey, Property, t } from "@mikro-orm/core";
 import { compileExpression } from "filtrex";
 import { Mod } from "ramune";
 import { BeatmapExtended, BeatmapsetExtended } from "ramune/lib/Responses";
@@ -11,14 +11,14 @@ export class Map extends CustomBaseEntity<Map, "id"> {
     @PrimaryKey() id!: number;
 
     @Property() modExpression?: string;
-    @Property() setID!: number;
-    @Property() week!: number;
+    @Property({ type: t.integer }) setID!: number;
+    @Property({ type: t.smallint }) week!: number;
 
     @Property() artist!: string;
     @Property() diff!: string;
     @Property() scoreable!: boolean;
     @Property() title!: string;
-    @Property() maxCombo!: number;
+    @Property({ type: t.smallint }) maxCombo!: number;
 
     @OneToMany(() => Score, score => score.map)
     scores = new Collection<Score>(this);

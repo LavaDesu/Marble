@@ -17,7 +17,7 @@ import { Blob } from "../Blob";
 import { Collection } from "../Utils/Collection";
 import { ConfigStore } from "./Stores/ConfigStore";
 import { LeagueStore, LeagueMap } from "./Stores/LeagueStore";
-import { asyncForEach, asyncMap } from "../Utils/Helpers";
+import { asyncMap } from "../Utils/Helpers";
 import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 
@@ -138,7 +138,8 @@ export class LeagueTracker extends EventEmitter implements Component {
                 .filter((score): score is Score => score !== undefined)
                 .sort((a, b) => b.score - a.score);
 
-            await asyncForEach(filtered, async score => await this.process(score, false));
+            for (const score of filtered)
+                await this.process(score, false);
         });
         return;
     }
@@ -161,7 +162,9 @@ export class LeagueTracker extends EventEmitter implements Component {
             return;
         }
         this.logger.info(`Recovering ${lostScores.length} lost scores`);
-        await asyncMap(lostScores, async score => await this.process(score));
+
+        for (const score of lostScores)
+            await this.process(score);
     }
 
     private async refresh() {

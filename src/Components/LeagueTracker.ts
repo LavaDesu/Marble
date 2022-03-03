@@ -223,7 +223,7 @@ export class LeagueTracker extends EventEmitter implements Component {
 
         if (shouldPost) {
             this.logger.info(`Processing: ${score.id} - ${score.best_id}`);
-            this.post(map, score);
+            await this.post(map, score);
         }
         return;
     }

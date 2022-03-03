@@ -23,7 +23,10 @@ export const env = {
     osuID: process.env.BLOB_ID ?? "",
     osuSecret: process.env.BLOB_SECRET ?? "",
     webhookID: process.env.BLOB_WEBHOOK_ID ?? "",
-    webhookToken: process.env.BLOB_WEBHOOK_TOKEN ?? ""
+    webhookToken: process.env.BLOB_WEBHOOK_TOKEN ?? "",
+
+    configPath: process.env.BLOB_CONFIG_PATH ?? "./data.json",
+    scorePath: process.env.BLOB_SCORE_PATH ?? "./scores"
 } as const;
 
 export interface Blob extends Provider {}

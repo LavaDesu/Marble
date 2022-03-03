@@ -92,9 +92,9 @@ export class LeagueTracker extends EventEmitter implements Component {
     }
 
     public async replayScores() {
-        const scorePaths = await readdir("./scores");
-        const scores = await asyncMap(scorePaths, async scorePath =>
-            JSON.parse(await readFile(joinPaths("./scores", scorePath), "utf8")) as Score
+        const scorePaths = await readdir(Blob.Environment.scorePath);
+        const scores = await asyncMap(scorePaths, async scoreName =>
+            JSON.parse(await readFile(joinPaths(Blob.Environment.scorePath, scoreName), "utf8")) as Score
         );
 
         /* we're not running this in parallel since we want later scores
@@ -203,7 +203,7 @@ export class LeagueTracker extends EventEmitter implements Component {
 
         this.allScores.getOrSet(score.user_id, []).push(score.id);
         if (this.recording && shouldStore)
-            await writeFile(`./scores/${score.id}.json`, JSON.stringify(score, undefined, 4));
+            await writeFile(joinPaths(Blob.Environment.scorePath, `${score.id}.json`), JSON.stringify(score, undefined, 4));
 
         // Check 1: Does the map exist in the player's league?
         const league = this.leagueStore.getPlayer(score.user_id)?.league;

@@ -78,7 +78,7 @@ export abstract class BaseCommand {
             }));
 
         const self = this;
-        this.command = new class extends SlashCommand {
+        this.command = new class Command extends SlashCommand {
             constructor() {
                 super(self.slashInstance, {
                     ...options,

@@ -298,7 +298,14 @@ export class FdlCommand extends BaseCommand {
                 fields: league.weeks.map(week => ({
                     name: `Week ${week.number}`,
                     value: week.maps
-                        .map(map => `[${map.beatmapset.artist} - **${map.beatmapset.title}** \\[${map.map.version}\\]](https://osu.ppy.sh/b/${map.map.id})`)
+                        .map(map => {
+                            let mods = this.leagueStore.getFriendlyMods(map.map.id);
+                            if (mods === "Freemod :)")
+                                mods = "";
+                            else
+                                mods = "+" + mods;
+                            return `[**${map.beatmapset.title}** \\[${map.map.version}\\]](https://osu.ppy.sh/b/${map.map.id}) ${mods}`;
+                        })
                         .join("\n"),
                     inline: false
                 }))

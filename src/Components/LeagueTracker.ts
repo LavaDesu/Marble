@@ -124,7 +124,7 @@ export class LeagueTracker extends EventEmitter implements Component {
                         )).score;
                     } catch (error) {
                         if (
-                            error?.type === "network" &&
+                            (error as any)?.type === "network" &&
                             (error as RequestNetworkError).code === 404
                         )
                             return;

@@ -45,15 +45,15 @@ export class ReflectionScope<M, K extends Targets<M>> {
     }
 
     public getCollection<T extends CollectionTypes<M>>(key: T, target: K[T]): M[T] {
-        let meta = this.get(key, target) as Collection<any, any>;
+        let meta = this.get(key, target) as unknown as Collection<any, any>;
 
         if (meta === undefined)
             meta = new Collection();
 
-        return meta.clone() as M[T];
+        return meta.clone() as unknown as M[T];
     }
 
     public setCollection<T extends CollectionTypes<M>>(key: T, collection: M[T], target: K[T]) {
-        this.define(key, (collection as Collection<any, any>).clone() as M[T], target);
+        this.define(key, (collection as unknown as Collection<any, any>).clone() as unknown as M[T], target);
     }
 }

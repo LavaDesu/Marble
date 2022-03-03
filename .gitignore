@@ -1,6 +1,7 @@
 # artifacts
 node_modules/
 out/
+result
 tsconfig.tsbuildinfo
 
 # These files are for nix's direnv integrations

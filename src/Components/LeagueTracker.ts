@@ -150,7 +150,7 @@ export class LeagueTracker extends EventEmitter implements Component {
         await this.leagueStore.getPlayers().asyncMap(async player => {
             const plays = this.allScores.getOrSet(player.osu.id, []);
             const cursor = this.ramune.getUserScores(player.osu.id, ScoreType.Recent, Gamemode.Osu);
-            for await (const score of cursor.iterate(5)) {
+            for await (const score of cursor.iterate(10)) {
                 if (plays.includes(score.id))
                     break;
 
@@ -182,7 +182,7 @@ export class LeagueTracker extends EventEmitter implements Component {
 
         try {
             const cursor = this.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu);
-            for await (const score of cursor.iterate(1)) {
+            for await (const score of cursor.iterate(5)) {
                 if (playerScores.includes(score.id))
                     break;
 

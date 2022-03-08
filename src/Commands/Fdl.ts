@@ -1,8 +1,8 @@
-import { ButtonStyle, CommandContext, CommandOptionType, ComponentActionRow, ComponentType, EmbedField, MessageEmbedOptions, MessageOptions } from "slash-create";
+import { ButtonStyle, CommandContext, CommandOptionType, ComponentActionRow, ComponentSelectOption, ComponentType, EmbedField, MessageEmbedOptions, MessageOptions } from "slash-create";
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { ConfigStore } from "../Components/Stores/ConfigStore";
-import { League, LeagueMap, LeaguePlayer, LeagueStore, LeagueWeek } from "../Components/Stores/LeagueStore";
+import { League, LeagueMap, LeaguePlayer, LeagueStore } from "../Components/Stores/LeagueStore";
 import { Collection } from "../Utils/Collection";
 import { Component, Dependency, LazyDependency } from "../Utils/DependencyInjection";
 import { sanitiseDiscord } from "../Utils/Helpers";
@@ -124,7 +124,6 @@ export class FdlCommand extends BaseCommand {
 
         const player = this.leagueStore.getPlayerByDiscord(ctx.user.id);
         let league = player ? player.league : this.leagueStore.getLeagues().valuesAsArray()[0];
-        let week: LeagueWeek;
         let map: LeagueMap;
 
         await ctx.fetch();
@@ -143,43 +142,36 @@ export class FdlCommand extends BaseCommand {
                 }))
             }]
         });
-        const selectWeekComponent = (): ComponentActionRow => ({
-            type: ComponentType.ACTION_ROW,
-            components: [{
-                type: ComponentType.SELECT,
-                custom_id: "select_week",
-                placeholder: "Select a week",
-                min_values: 1,
-                max_values: 1,
-                options: league.weeks.map(mapWeek => ({
-                    label: `Week ${mapWeek.number.toString()}`,
-                    value: mapWeek.number.toString(),
-                    default: week === mapWeek
-                }))
-            }]
-        });
-        const selectMapComponent = (): ComponentActionRow => ({
-            type: ComponentType.ACTION_ROW,
-            components: [{
-                type: ComponentType.SELECT,
-                custom_id: "select_map",
-                placeholder: "Select a map",
-                min_values: 1,
-                max_values: 1,
-                options: week.maps.map((weekMap, id, index) => ({
-                    label: `Map ${(index + 1).toString()} (${id.toString()})`,
-                    description: weekMap.beatmapset.title,
-                    value: weekMap.map.id.toString(),
-                    default: false
-                }))
-            }]
-        });
+        const selectMapComponent = (): ComponentActionRow => {
+            const options: ComponentSelectOption[] = [];
+            league.weeks.forEach((leagueWeek, weekNum) =>
+                leagueWeek.maps.map((weekMap, id, index) =>
+                    options.push({
+                        label: weekMap.beatmapset.title,
+                        description: `Week ${weekNum} Map ${index + 1} (${id.toString()})`,
+                        value: `${weekNum}_${id}`,
+                        default: false
+                    })
+                )
+            );
+            return {
+                type: ComponentType.ACTION_ROW,
+                components: [{
+                    type: ComponentType.SELECT,
+                    custom_id: "select_map",
+                    placeholder: "Select a map",
+                    min_values: 1,
+                    max_values: 1,
+                    options
+                }]
+            };
+        };
 
         await ctx.send({
             embeds: [{
                 description: `League = ${league.name}`
             }],
-            components: [selectLeagueComponent(), selectWeekComponent()]
+            components: [selectLeagueComponent(), selectMapComponent()]
         });
 
         ctx.registerComponent("select_league", async selectCtx => {
@@ -188,25 +180,12 @@ export class FdlCommand extends BaseCommand {
                 embeds: [{
                     description: `League = ${league.name}`
                 }],
-                components: [selectLeagueComponent(), selectWeekComponent()]
-            });
-        });
-        ctx.registerComponent("select_week", async selectCtx => {
-            const weekPos = parseInt(selectCtx.values.join(""));
-            week = league.weeks.get(weekPos)!;
-            await selectCtx.editParent({
-                embeds: [{
-                    description: [
-                        `League = ${league.name}`,
-                        `Week = ${week.number}`
-                    ].join("\n")
-                }],
-                components: [selectLeagueComponent(), selectWeekComponent(), selectMapComponent()]
+                components: [selectLeagueComponent(), selectMapComponent()]
             });
         });
         ctx.registerComponent("select_map", selectCtx => {
-            const mapID = parseInt(selectCtx.values.join(""));
-            map = week.maps.get(mapID)!;
+            const [weekNum, mapID] = selectCtx.values.join("").split("_").map(p => parseInt(p));
+            map = league.weeks.get(weekNum)!.maps.get(mapID)!;
             resolve!(map);
         });
 

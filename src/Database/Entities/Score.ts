@@ -1,6 +1,7 @@
-import { Entity, Enum, Filter, Index, ManyToOne, PrimaryKey, Property, t } from "@mikro-orm/core";
+import { Entity, Enum, Index, ManyToOne, PrimaryKey, Property, t } from "@mikro-orm/core";
 import { Mod, ScoreRank } from "ramune";
 import type { Score as RamuneScore } from "ramune/lib/Responses";
+import { NumberBigIntType } from "../NumberBigIntType";
 import { CustomBaseEntity } from "./CustomBaseEntity";
 import { Map } from "./Map";
 import { User } from "./User";
@@ -8,8 +9,8 @@ import { User } from "./User";
 @Entity()
 @Index({ properties: ["map", "user"] })
 export class Score extends CustomBaseEntity<Score, "id"> {
-    @PrimaryKey({ type: t.bigint }) id!: string;
-    @Property({ type: t.bigint }) bestID?: string;
+    @PrimaryKey({ type: NumberBigIntType }) id!: number;
+    @Property({ type: NumberBigIntType }) bestID?: number;
     @Property({ columnType: "timestamptz(3)" }) createdAt!: Date;
     @Enum({ array: true, items: () => Mod }) mods!: Mod[];
 
@@ -28,8 +29,8 @@ export class Score extends CustomBaseEntity<Score, "id"> {
     constructor(data: RamuneScore) {
         super();
 
-        this.id = data.id.toString();
-        this.bestID = data.best_id.toString();
+        this.id = data.id;
+        this.bestID = data.best_id;
         this.createdAt = new Date(data.created_at);
         this.mods = data.mods;
 

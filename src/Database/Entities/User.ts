@@ -1,5 +1,6 @@
-import { Collection, Entity, ManyToOne, OneToMany, PrimaryKey, Property, t, Unique } from "@mikro-orm/core";
+import { Collection, Entity, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import { UserCompact } from "ramune/lib/Responses";
+import { NumberBigIntType } from "../NumberBigIntType";
 import { CustomBaseEntity } from "./CustomBaseEntity";
 import { League } from "./League";
 import { Score } from "./Score";
@@ -9,7 +10,7 @@ export class User extends CustomBaseEntity<User, "id"> {
     @PrimaryKey() id!: number;
     @Property() @Unique() discordID!: string;
     @Property() @Unique() username!: string;
-    @Property({ type: t.bigint }) lastPlayID = "0";
+    @Property({ type: NumberBigIntType }) lastPlayID = 0;
     @ManyToOne() league!: League;
 
     @OneToMany(() => Score, score => score.user)

@@ -107,13 +107,12 @@ export class LeagueTracker extends EventEmitter implements Component {
         const players = await em.find(User, {});
         await asyncMap(players, async player => {
             const cursor = this.ramune.getUserScores(player.id, ScoreType.Recent, Gamemode.Osu);
-            let update: string | undefined;
+            let update: number | undefined;
             for await (const score of cursor.iterate(20)) {
-                const stringID = score.id.toString();
-                if (stringID === player.lastPlayID)
+                if (score.id === player.lastPlayID)
                     break;
 
-                update ??= stringID;
+                update ??= score.id;
                 lostScores.push(score);
             }
             if (update)
@@ -147,13 +146,12 @@ export class LeagueTracker extends EventEmitter implements Component {
 
         try {
             const cursor = this.ramune.getUserScores(player.id, ScoreType.Recent, Gamemode.Osu);
-            let update: string | undefined;
+            let update: number | undefined;
             for await (const score of cursor.iterate(1)) {
-                const stringID = score.id.toString();
-                if (stringID === player.lastPlayID)
+                if (score.id === player.lastPlayID)
                     break;
 
-                update ??= stringID;
+                update ??= score.id;
                 scores.push(score);
             }
             if (update)
@@ -252,7 +250,7 @@ export class LeagueTracker extends EventEmitter implements Component {
             return;
 
         const previousScore = await em.findOne(Score, { map: rawScore.beatmap!.id, user });
-        if (rawScore.id.toString() === previousScore?.id || rawScore.score < previousScore?.score!)
+        if (rawScore.id === previousScore?.id || rawScore.score < previousScore?.score!)
             return;
 
         const score = new Score(rawScore);

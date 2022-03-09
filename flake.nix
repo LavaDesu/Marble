@@ -22,6 +22,26 @@
             buildInputs = oldAttrs.buildInputs ++ [ pkgs.nodePackages.typescript ];
           }));
         };
+
+        linkDevDependencies = true;
+
+        outputs = [ "out" ];
+        buildInputs = [ pkgs.nodePackages.typescript ];
+
+        installPhase = ''
+          runHook preInstall
+
+          mv node_modules/blob work
+          mv node_modules work/node_modules
+
+          cd work
+          tsc
+
+          cd ..
+          mv work $out
+
+          runHook postInstall
+        '';
       };
     });
 }

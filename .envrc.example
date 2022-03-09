@@ -10,3 +10,6 @@ export BLOB_ID=""
 export BLOB_SECRET=""
 export BLOB_WEBHOOK_ID=""
 export BLOB_WEBHOOK_TOKEN=""
+
+export BLOB_CONFIG_PATH="./data.json"
+export BLOB_SCORE_PATH="./scores"

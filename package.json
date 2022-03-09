@@ -1,7 +1,7 @@
 {
   "name": "blob",
   "description": "private bot for a private discord server",
-  "version": "0.6.1",
+  "version": "0.6.5",
   "license": "MIT",
   "private": true,
   "scripts": {

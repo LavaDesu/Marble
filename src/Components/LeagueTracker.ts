@@ -17,7 +17,7 @@ import { Blob } from "../Blob";
 import { Collection } from "../Utils/Collection";
 import { ConfigStore } from "./Stores/ConfigStore";
 import { LeagueStore, LeagueMap } from "./Stores/LeagueStore";
-import { asyncForEach, asyncMap } from "../Utils/Helpers";
+import { asyncMap } from "../Utils/Helpers";
 import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 
@@ -92,9 +92,9 @@ export class LeagueTracker extends EventEmitter implements Component {
     }
 
     public async replayScores() {
-        const scorePaths = await readdir("./scores");
-        const scores = await asyncMap(scorePaths, async scorePath =>
-            JSON.parse(await readFile(joinPaths("./scores", scorePath), "utf8")) as Score
+        const scorePaths = await readdir(Blob.Environment.scorePath);
+        const scores = await asyncMap(scorePaths, async scoreName =>
+            JSON.parse(await readFile(joinPaths(Blob.Environment.scorePath, scoreName), "utf8")) as Score
         );
 
         /* we're not running this in parallel since we want later scores
@@ -124,7 +124,7 @@ export class LeagueTracker extends EventEmitter implements Component {
                         )).score;
                     } catch (error) {
                         if (
-                            error?.type === "network" &&
+                            (error as any)?.type === "network" &&
                             (error as RequestNetworkError).code === 404
                         )
                             return;
@@ -138,7 +138,8 @@ export class LeagueTracker extends EventEmitter implements Component {
                 .filter((score): score is Score => score !== undefined)
                 .sort((a, b) => b.score - a.score);
 
-            await asyncForEach(filtered, async score => await this.process(score, false));
+            for (const score of filtered)
+                await this.process(score, false);
         });
         return;
     }
@@ -149,7 +150,7 @@ export class LeagueTracker extends EventEmitter implements Component {
         await this.leagueStore.getPlayers().asyncMap(async player => {
             const plays = this.allScores.getOrSet(player.osu.id, []);
             const cursor = this.ramune.getUserScores(player.osu.id, ScoreType.Recent, Gamemode.Osu);
-            for await (const score of cursor.iterate(5)) {
+            for await (const score of cursor.iterate(10)) {
                 if (plays.includes(score.id))
                     break;
 
@@ -161,7 +162,9 @@ export class LeagueTracker extends EventEmitter implements Component {
             return;
         }
         this.logger.info(`Recovering ${lostScores.length} lost scores`);
-        await asyncMap(lostScores, async score => await this.process(score));
+
+        for (const score of lostScores)
+            await this.process(score);
     }
 
     private async refresh() {
@@ -179,7 +182,7 @@ export class LeagueTracker extends EventEmitter implements Component {
 
         try {
             const cursor = this.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu);
-            for await (const score of cursor.iterate(1)) {
+            for await (const score of cursor.iterate(5)) {
                 if (playerScores.includes(score.id))
                     break;
 
@@ -203,7 +206,7 @@ export class LeagueTracker extends EventEmitter implements Component {
 
         this.allScores.getOrSet(score.user_id, []).push(score.id);
         if (this.recording && shouldStore)
-            await writeFile(`./scores/${score.id}.json`, JSON.stringify(score, undefined, 4));
+            await writeFile(joinPaths(Blob.Environment.scorePath, `${score.id}.json`), JSON.stringify(score, undefined, 4));
 
         // Check 1: Does the map exist in the player's league?
         const league = this.leagueStore.getPlayer(score.user_id)?.league;
@@ -223,7 +226,7 @@ export class LeagueTracker extends EventEmitter implements Component {
 
         if (shouldPost) {
             this.logger.info(`Processing: ${score.id} - ${score.best_id}`);
-            this.post(map, score);
+            await this.post(map, score);
         }
         return;
     }

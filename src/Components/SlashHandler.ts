@@ -112,7 +112,7 @@ export class SlashHandler extends SlashCreator {
                 await this.syncCommandsIn(guildID, options.deleteCommands);
             } catch (e) {
                 if (options.skipGuildErrors)
-                    this.emit("warn", `An error occurred during guild sync (${guildID}): ${e.message as string}`);
+                    this.emit("warn", `An error occurred during guild sync (${guildID}): ${(e as any).message as string}`);
                 else
                     throw e;
             }
@@ -123,7 +123,7 @@ export class SlashHandler extends SlashCreator {
             try {
                 await this.syncCommandPermissions();
             } catch (e) {
-                this.emit("error", e);
+                this.emit("error", e as Error);
             }
 
         this.emit("synced");

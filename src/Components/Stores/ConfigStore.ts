@@ -1,5 +1,6 @@
 import * as fs from "fs/promises";
 import type { ScoreRank } from "ramune";
+import { Blob } from "../../Blob";
 import { Component, ComponentLoad } from "../../Utils/DependencyInjection";
 import { Logger } from "../../Utils/Logger";
 import type { LeagueConfig } from "./LeagueStore";
@@ -26,7 +27,7 @@ export class ConfigStore implements Component {
 
     @ComponentLoad
     public async load(): Promise<void> {
-        const raw = await fs.readFile("./data.json", "utf8");
+        const raw = await fs.readFile(Blob.Environment.configPath, "utf8");
         const config: Config = JSON.parse(raw);
         this.config = config;
 

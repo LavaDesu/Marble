@@ -189,7 +189,7 @@ export class FdlCommand extends BaseCommand {
             resolve!(map);
         });
 
-        return promise;
+        return await promise;
     }
 
     // TODO: update this dynamically instead of regenerating

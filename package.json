@@ -14,18 +14,18 @@
     "watch:dev": "tsnd --rs --inspect --respawn --transpile-only -- src/Blob.ts"
   },
   "devDependencies": {
-    "@types/node": "^16.4.10",
-    "@typescript-eslint/eslint-plugin": "^4.28.5",
-    "@typescript-eslint/parser": "^4.28.5",
+    "@types/node": "^16.11.26",
+    "@typescript-eslint/eslint-plugin": "^5.14.0",
+    "@typescript-eslint/parser": "^5.14.0",
     "eslint": "^7.32.0",
-    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-import": "^2.25.4",
     "ts-node-dev": "^1.1.8",
-    "typescript": "^4.3.5"
+    "typescript": "^4.6.2"
   },
   "dependencies": {
     "eris": "^0.16.1",
     "ramune": "github:LavaDesu/Ramune#0.0.12",
     "reflect-metadata": "^0.1.13",
-    "slash-create": "^5.0.3"
+    "slash-create": "^5.3.0"
   }
 }

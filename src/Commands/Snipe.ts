@@ -1,9 +1,9 @@
 import { EmbedOptions, User } from "eris";
 import { CommandContext } from "slash-create";
 import { DiscordClient } from "../Components/Discord";
-import { Config } from "../Config";
+import { ConfigStore } from "../Components/Stores/ConfigStore";
 import { Collection } from "../Utils/Collection";
-import { Component, ComponentLoad, LazyDependency } from "../Utils/DependencyInjection";
+import { Component, ComponentLoad, Dependency, LazyDependency } from "../Utils/DependencyInjection";
 import { BaseCommand, CommandExec } from "./BaseCommand";
 
 @Component("Command/Snipe")
@@ -11,6 +11,7 @@ export class SnipeCommand extends BaseCommand {
     protected name = "snipe";
     protected description = "snipe the last message delete or edit in 30 seconds";
 
+    @Dependency private readonly config!: ConfigStore;
     @LazyDependency private readonly discord!: DiscordClient;
 
     private readonly lastMessages: Collection<string, Ephemeral<ModifiedMessage>> = new Collection();
@@ -43,7 +44,7 @@ export class SnipeCommand extends BaseCommand {
     setupOptions() {
         return {
             defaultPermission: true,
-            guildIDs: Config.commandGuilds
+            guildIDs: this.config.getCommandGuilds()
         };
     }
 

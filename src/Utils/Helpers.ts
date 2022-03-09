@@ -1,14 +1,3 @@
-export function group<T>(array: T[], key: (value: T) => number): T[][] {
-    const ret: T[][] = [];
-    array.forEach(e => {
-        if (!ret[key(e)])
-            ret[key(e)] = [];
-
-        ret[key(e)].push(e);
-    });
-    return ret;
-}
-
 export async function asyncMap<T, R>(array: T[], cb: (value: T, index: number, arr: T[]) => Promise<R>): Promise<R[]> {
     return await Promise.all(array.map(cb));
 }

@@ -1,7 +1,7 @@
 {
   "name": "blob",
   "description": "private bot for a private discord server",
-  "version": "0.7.3",
+  "version": "0.6.1",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -10,7 +10,6 @@
     "lint": "eslint -c .eslintrc.cjs --ext .ts src",
     "start": "tsnd --rs --transpile-only -- src/Blob.ts",
     "start:dev": "tsnd --rs --inspect --transpile-only -- src/Blob.ts",
-    "start:dev-brk": "tsnd --rs --inspect-brk --transpile-only -- src/Blob.ts",
     "watch": "tsnd --rs --respawn --transpile-only src/Blob.ts",
     "watch:dev": "tsnd --rs --inspect --respawn --transpile-only -- src/Blob.ts"
   },
@@ -21,27 +20,12 @@
     "eslint": "^7.32.0",
     "eslint-plugin-import": "^2.23.4",
     "ts-node-dev": "^1.1.8",
-    "typescript": "^4.5.5"
+    "typescript": "^4.3.5"
   },
   "dependencies": {
-    "@mikro-orm/cli": "^5.0.2",
-    "@mikro-orm/core": "^5.0.2",
-    "@mikro-orm/knex": "^5.0.2",
-    "@mikro-orm/migrations": "^5.0.2",
-    "@mikro-orm/postgresql": "^5.0.2",
-    "@mikro-orm/reflection": "^5.0.2",
     "eris": "^0.16.1",
-    "filtrex": "^2.2.3",
     "ramune": "github:LavaDesu/Ramune#0.0.12",
     "reflect-metadata": "^0.1.13",
-    "slash-create": "^5.0.3",
-    "ts-morph": "^13.0.3"
-  },
-  "mikro-orm": {
-    "useTsNode": true,
-    "configPaths": [
-      "./src/Database/ORMConfig.ts",
-      "./out/Database/ORMConfig.js"
-    ]
+    "slash-create": "^5.0.3"
   }
 }

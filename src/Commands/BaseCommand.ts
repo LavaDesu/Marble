@@ -12,7 +12,6 @@ type MetadataMap = {
     Subcommands: Collection<string, {
         description?: string;
         disabled: boolean;
-        isGroup: boolean;
         method: string;
         options?: ApplicationCommandOption[];
     }>;
@@ -71,8 +70,8 @@ export abstract class BaseCommand {
         const subcmdsAsOptions = subcommands
             .entriesArray()
             .filter(subcmd => !subcmd[1].disabled)
-            .map(([name, { description, isGroup, options: scOptions }]) => ({
-                type: isGroup ? CommandOptionType.SUB_COMMAND_GROUP : CommandOptionType.SUB_COMMAND,
+            .map(([name, { description, options: scOptions }]) => ({
+                type: CommandOptionType.SUB_COMMAND,
                 name,
                 description: description ?? this.description,
                 options: scOptions
@@ -86,8 +85,8 @@ export abstract class BaseCommand {
                     name: self.name,
                     description: self.description,
                     options: [
-                        ...subcmdsAsOptions,
-                        ...options.options ?? []
+                        ...options.options ?? [],
+                        ...subcmdsAsOptions
                     ]
                 });
 
@@ -142,7 +141,7 @@ export function CommandExec(target: BaseCommand, key: string, _descriptor: Prope
     Reflector.define("CommandExec", key, target.constructor);
 }
 
-export function Subcommand(name: string, description: string, options?: ApplicationCommandOption[], isGroup?: boolean) {
+export function Subcommand(name: string, description: string, options?: ApplicationCommandOption[]) {
     return function(target: BaseCommand, key: string, _descriptor: PropertyDescriptor) {
         if (!(target instanceof BaseCommand))
             throw new Error("@Subcommand used on a target that doesn't extend Command!");
@@ -150,7 +149,6 @@ export function Subcommand(name: string, description: string, options?: Applicat
         subcommands.set(name, {
             description,
             disabled: false,
-            isGroup: isGroup ?? false,
             method: key,
             options
         });

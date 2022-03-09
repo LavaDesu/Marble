@@ -12,7 +12,7 @@
       pnpm = import pnpm2nix { inherit pkgs; };
     in rec {
       devShell = pkgs.mkShell {
-        buildInputs = with pkgs; [ nodejs-16_x python3 sqlite watchman ];
+        buildInputs = with pkgs; [ nodejs-16_x watchman ];
       };
       defaultPackage = pnpm.mkPnpmPackage {
         src = ./.;

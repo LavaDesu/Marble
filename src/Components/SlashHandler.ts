@@ -7,8 +7,6 @@ import { DevCommand } from "../Commands/Dev";
 import { PingCommand } from "../Commands/Ping";
 import { SnipeCommand } from "../Commands/Snipe";
 import { FdlCommand } from "../Commands/Fdl";
-import { FdlAdminCommand } from "../Commands/FdlAdmin";
-import { Config } from "../Config";
 
 export interface SlashHandler extends Provider {}
 @Provider
@@ -20,7 +18,6 @@ export class SlashHandler extends SlashCreator {
 
     @Export private readonly devCommand: DevCommand;
     @Export private readonly fdlCommand: FdlCommand;
-    @Export private readonly fdlAdminCommand: FdlAdminCommand;
     @Export private readonly pingCommand: PingCommand;
     @Export private readonly snipeCommand: SnipeCommand;
 
@@ -28,9 +25,9 @@ export class SlashHandler extends SlashCreator {
 
     constructor() {
         super({
-            applicationID: Config.botID,
-            publicKey: Config.botKey,
-            token: Config.botToken
+            applicationID: Blob.Environment.botID,
+            publicKey: Blob.Environment.botKey,
+            token: Blob.Environment.botToken
         });
 
         this
@@ -56,7 +53,6 @@ export class SlashHandler extends SlashCreator {
 
         this.devCommand = new DevCommand(this);
         this.fdlCommand = new FdlCommand(this);
-        this.fdlAdminCommand = new FdlAdminCommand(this);
         this.pingCommand = new PingCommand(this);
         this.snipeCommand = new SnipeCommand(this);
 
@@ -82,7 +78,7 @@ export class SlashHandler extends SlashCreator {
     }
 
     async unload() {
-        if (!Config.debug)
+        if (!Blob.Environment.development)
             await this.syncCommandsPromise();
     }
 
@@ -116,7 +112,7 @@ export class SlashHandler extends SlashCreator {
                 await this.syncCommandsIn(guildID, options.deleteCommands);
             } catch (e) {
                 if (options.skipGuildErrors)
-                    this.emit("warn", `An error occurred during guild sync (${guildID}): ${(e as any).message as string}`);
+                    this.emit("warn", `An error occurred during guild sync (${guildID}): ${e.message as string}`);
                 else
                     throw e;
             }
@@ -127,7 +123,7 @@ export class SlashHandler extends SlashCreator {
             try {
                 await this.syncCommandPermissions();
             } catch (e) {
-                this.emit("error", e as Error);
+                this.emit("error", e);
             }
 
         this.emit("synced");

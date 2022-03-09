@@ -6,21 +6,37 @@ import { DiscordClient } from "./Components/Discord";
 import { LeagueTracker } from "./Components/LeagueTracker";
 import { InviteTracker } from "./Components/InviteTracker";
 import { SlashHandler } from "./Components/SlashHandler";
+import { ConfigStore } from "./Components/Stores/ConfigStore";
+import { LeagueStore } from "./Components/Stores/LeagueStore";
 import { Export, NeedsLoad, Provider } from "./Utils/DependencyInjection";
 import { Logger } from "./Utils/Logger";
 
 import { version as VERSION } from "../package.json";
-import { Database } from "./Components/Database";
-import { Config } from "./Config";
+
+export const env = {
+    development: process.env.NODE_ENV === "development",
+    devGuild: process.env.BLOB_DEV_GUILD ?? "",
+    devID: process.env.BLOB_DEV ?? "",
+    botID: process.env.BLOB_BOT ?? "",
+    botKey: process.env.BLOB_KEY ?? "",
+    botToken: process.env.BLOB_TOKEN ?? "",
+    osuID: process.env.BLOB_ID ?? "",
+    osuSecret: process.env.BLOB_SECRET ?? "",
+    webhookID: process.env.BLOB_WEBHOOK_ID ?? "",
+    webhookToken: process.env.BLOB_WEBHOOK_TOKEN ?? ""
+} as const;
 
 export interface Blob extends Provider {}
 @Provider
 export class Blob {
+    public static readonly Environment = env;
+
     public readonly logger = new Logger("Blob");
 
-    @Export private readonly database: Database;
+    @Export private readonly config: ConfigStore;
     @Export private readonly discordClient: DiscordClient;
     @Export private readonly inviteTracker: InviteTracker;
+    @Export private readonly leagueStore: LeagueStore;
     @Export private readonly tracker: LeagueTracker;
 
     @Export private readonly slashHandler: SlashHandler;
@@ -33,15 +49,16 @@ export class Blob {
         this.logger.info(`Blob ${VERSION as string}`);
         this.discordClient = new DiscordClient();
 
-        this.database = new Database();
+        this.config = new ConfigStore();
         this.inviteTracker = new InviteTracker();
+        this.leagueStore = new LeagueStore();
         this.slashHandler = new SlashHandler();
         this.tracker = new LeagueTracker();
-        this.ramune = new Ramune(Config.osuID.toString(), Config.osuSecret, {
+        this.ramune = new Ramune(env.osuID, env.osuSecret, {
             requestHandler: {
                 rateLimit: {
-                    limit: 5,
-                    interval: 1
+                    limit: 500,
+                    interval: 60e3
                 }
             }
         });

@@ -3,9 +3,7 @@ import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } f
 import { Blob } from "../Blob";
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { ConfigStore } from "../Components/Stores/ConfigStore";
-import { LeagueStore } from "../Components/Stores/LeagueStore";
-import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
+import { Component, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { BaseCommand, Subcommand } from "./BaseCommand";
 
@@ -16,13 +14,7 @@ export class DevCommand extends BaseCommand {
     protected readonly logger = new Logger("Command/Dev");
 
     @Dependency private readonly discord!: DiscordClient;
-    @Dependency private readonly leagueStore!: LeagueStore;
     @Dependency private readonly tracker!: LeagueTracker;
-
-    @ComponentLoad
-    async load() {
-        await super.load();
-    }
 
     protected setupOptions() {
         return {
@@ -67,24 +59,6 @@ export class DevCommand extends BaseCommand {
             const score = JSON.parse(file);
             await this.tracker.process(score);
             await ctx.send("replayed");
-        } catch(e) {
-            this.logger.error(e);
-            await ctx.send("error :( check console");
-        }
-    }
-
-    @Subcommand("reload", "reloads store data")
-    async reload(ctx: CommandContext) {
-        this.logger.debug("reload");
-        try {
-            this.slashInstance.ready = false;
-            await this.slashInstance.reloadComponent(ConfigStore);
-            await this.slashInstance.reloadComponent(LeagueStore);
-            this.slashInstance.ready = true;
-            await this.slashInstance.requestSync();
-            // await this.store.load();
-            // await this.tracker.syncScores();
-            await ctx.send("a ok");
         } catch(e) {
             this.logger.error(e);
             await ctx.send("error :( check console");

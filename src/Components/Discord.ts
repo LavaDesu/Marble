@@ -2,7 +2,7 @@ import { Client, Constants as ErisConstants } from "eris";
 import { CommandContext } from "slash-create";
 
 import { Blob } from "../Blob";
-import { Component, ComponentLoad } from "../Utils/DependencyInjection";
+import { Component, Load } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { Queue } from "../Utils/Queue";
 
@@ -24,7 +24,7 @@ export class DiscordClient extends Client implements Component {
         });
     }
 
-    @ComponentLoad
+    @Load
     public async load(): Promise<void> {
         this.componentQueue = new Queue(ctx => {
             if (ctx.messageID) try {

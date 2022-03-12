@@ -1,17 +1,16 @@
 import "reflect-metadata";
 
-import { Ramune } from "ramune";
-
 import { DiscordClient } from "./Components/Discord";
 import { LeagueTracker } from "./Components/LeagueTracker";
 import { InviteTracker } from "./Components/InviteTracker";
-import { SlashHandler } from "./Components/SlashHandler";
-import { ConfigStore } from "./Components/Stores/ConfigStore";
-import { LeagueStore } from "./Components/Stores/LeagueStore";
-import { Export, NeedsLoad, Provider } from "./Utils/DependencyInjection";
 import { Logger } from "./Utils/Logger";
 
 import { version as VERSION } from "../package.json";
+import { Component, Container, Dependency, Load } from "./Utils/DependencyInjection";
+import { DevCommand } from "./Commands/Dev";
+import { FdlCommand } from "./Commands/Fdl";
+import { PingCommand } from "./Commands/Ping";
+import { SnipeCommand } from "./Commands/Snipe";
 
 export const env = {
     development: process.env.NODE_ENV === "development",
@@ -29,64 +28,45 @@ export const env = {
     scorePath: process.env.BLOB_SCORE_PATH ?? "./scores"
 } as const;
 
-export interface Blob extends Provider {}
-@Provider
+const container = Container.scope(Symbol("DI/Main"), { strict: true });
+
+@Component()
 export class Blob {
     public static readonly Environment = env;
-
     public readonly logger = new Logger("Blob");
 
-    @Export private readonly config: ConfigStore;
-    @Export private readonly discordClient: DiscordClient;
-    @Export private readonly inviteTracker: InviteTracker;
-    @Export private readonly leagueStore: LeagueStore;
-    @Export private readonly tracker: LeagueTracker;
+    @Dependency private readonly inviteTracker!: InviteTracker;
+    @Dependency private readonly leagueTracker!: LeagueTracker;
 
-    @Export private readonly slashHandler: SlashHandler;
-
-    @Export
-    @NeedsLoad
-    private readonly ramune: Ramune;
+    @Dependency private readonly devCommand!: DevCommand;
+    @Dependency private readonly fdlCommand!: FdlCommand;
+    @Dependency private readonly pingCommand!: PingCommand;
+    @Dependency private readonly snipeCommand!: SnipeCommand;
 
     constructor() {
         this.logger.info(`Blob ${VERSION as string}`);
-        this.discordClient = new DiscordClient();
-
-        this.config = new ConfigStore();
-        this.inviteTracker = new InviteTracker();
-        this.leagueStore = new LeagueStore();
-        this.slashHandler = new SlashHandler();
-        this.tracker = new LeagueTracker();
-        this.ramune = new Ramune(env.osuID, env.osuSecret, {
-            requestHandler: {
-                rateLimit: {
-                    limit: 500,
-                    interval: 60e3
-                }
-            }
-        });
-
-        this.ramune.refreshToken().then(() => this.markReady(Ramune));
     }
 
-    load() {
-        this.discordClient.editStatus("online");
+    @Load
+    async load() {
+        const discord = await container.get(DiscordClient);
+        discord.editStatus("online");
         this.logger.info("Ready~");
     }
 }
 
-const provider = new Blob();
+const instance = container.getNoWait(Blob);
 
 [ "SIGINT", "SIGTERM" ].map(signal =>
     process.on(signal, async () => {
-        provider.logger.info("Exiting via", signal);
+        instance.logger.info("Exiting via", signal);
 
         setTimeout(() => {
-            provider.logger.warn("Forced exit after timeout (10 seconds)");
+            instance.logger.warn("Forced exit after timeout (10 seconds)");
             process.exit();
         }, 10e3);
 
-        await provider.unload?.();
+        await container.unload(Blob);
         const uptime = process.uptime();
         const uptimeString = [
             Math.floor(uptime / 60 / 60 / 24),
@@ -94,8 +74,8 @@ const provider = new Blob();
             Math.floor(uptime % (60 * 60) / 60),
             Math.floor(uptime % 60)
         ].map(t => t.toString().padStart(2, "0")).join(":");
-        provider.logger.info("Goodbye!");
-        provider.logger.info("Uptime: " + uptimeString);
+        instance.logger.info("Goodbye!");
+        instance.logger.info("Uptime: " + uptimeString);
         process.exit();
     })
 );

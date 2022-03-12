@@ -1,9 +1,9 @@
 import type { Beatmap, Beatmapset, Mod, User as RamuneUser } from "ramune";
-import { Ramune } from "ramune";
 import { Collection } from "../../Utils/Collection";
-import { Component, ComponentLoad, Dependency } from "../../Utils/DependencyInjection";
+import { Component, Load, Dependency } from "../../Utils/DependencyInjection";
 import { asyncForEach } from "../../Utils/Helpers";
 import { Logger } from "../../Utils/Logger";
+import { WrappedRamune } from "../WrappedRamune";
 import { ConfigStore } from "./ConfigStore";
 
 export interface LeagueConfig {
@@ -19,14 +19,14 @@ export class LeagueStore {
     private readonly logger = new Logger("Store/League");
 
     @Dependency private readonly config!: ConfigStore;
-    @Dependency private readonly ramune!: Ramune;
+    @Dependency private readonly ramune!: WrappedRamune;
 
     private readonly leagues: Collection<string, League> = new Collection();
     private readonly maps: Collection<number, LeagueMap> = new Collection();
     private readonly players: Collection<number, LeaguePlayer> = new Collection();
     private readonly discordPlayers: Collection<string, LeaguePlayer> = new Collection();
 
-    @ComponentLoad
+    @Load
     public async load(): Promise<void> {
         this.leagues.clear();
         this.maps.clear();

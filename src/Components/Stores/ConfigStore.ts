@@ -1,7 +1,7 @@
 import * as fs from "fs/promises";
 import type { ScoreRank } from "ramune";
 import { Blob } from "../../Blob";
-import { Component, ComponentLoad } from "../../Utils/DependencyInjection";
+import { Component, Load } from "../../Utils/DependencyInjection";
 import { Logger } from "../../Utils/Logger";
 import type { LeagueConfig } from "./LeagueStore";
 
@@ -17,7 +17,7 @@ interface InviteTrackingSettings {
 }
 
 @Component("Store/Config")
-export class ConfigStore implements Component {
+export class ConfigStore {
     private readonly logger = new Logger("Store/Config");
 
     private config!: Config;
@@ -25,7 +25,7 @@ export class ConfigStore implements Component {
     private inviteTracking: InviteTrackingSettings = { guilds: {} };
     private rankEmotes!: { [name in ScoreRank]: string };
 
-    @ComponentLoad
+    @Load
     public async load(): Promise<void> {
         const raw = await fs.readFile(Blob.Environment.configPath, "utf8");
         const config: Config = JSON.parse(raw);

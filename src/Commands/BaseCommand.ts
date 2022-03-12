@@ -1,9 +1,9 @@
 import { ApplicationCommandOption, CommandContext, CommandOptionType, SlashCommand, SlashCommandOptions } from "slash-create";
 import { SlashHandler } from "../Components/SlashHandler";
 import { Collection } from "../Utils/Collection";
-import { ComponentLoad } from "../Utils/DependencyInjection";
+import { Dependency, Load } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
-import { Constructable, ReflectionScope } from "../Utils/Reflection";
+import { Constructor, ReflectionScope } from "../Utils/Reflection";
 
 export type LightOptions = Omit<SlashCommandOptions, "name" | "description">;
 
@@ -17,8 +17,8 @@ type MetadataMap = {
     }>;
 };
 type MetadataTargetMap = {
-    CommandExec: Constructable<BaseCommand>;
-    Subcommands: Constructable<BaseCommand>;
+    CommandExec: Constructor<BaseCommand>;
+    Subcommands: Constructor<BaseCommand>;
 };
 const MetadataSymbols = {
     CommandExec: Symbol("commandExec"),
@@ -28,12 +28,16 @@ const MetadataSymbols = {
 const Reflector = new ReflectionScope<MetadataMap, MetadataTargetMap>(MetadataSymbols);
 export { Reflector as CommandReflector };
 
+// The only reason we need this is because of https://github.com/microsoft/TypeScript/issues/3841
+export interface BaseCommand {
+    constructor: any;
+}
 export abstract class BaseCommand {
     protected readonly logger: Logger = new Logger("Command/Unknown");
     protected abstract name: string;
     protected abstract description: string;
 
-    protected readonly slashInstance!: SlashHandler;
+    @Dependency protected readonly slashInstance!: SlashHandler;
 
     public command!: SlashCommand;
 
@@ -43,7 +47,7 @@ export abstract class BaseCommand {
         this.slashInstance = creator;
     }
 
-    @ComponentLoad
+    @Load
     async load() {
         await this.buildCommand();
     }

@@ -1,3 +1,6 @@
+export interface Collection<K, V> {
+    get<T extends V = V>(key: K): T | undefined;
+}
 export class Collection<K, V> extends Map<K, V> {
     public limit: number;
     constructor(iterable?: Iterable<readonly [K, V]>, limit?: number) {
@@ -42,6 +45,13 @@ export class Collection<K, V> extends Map<K, V> {
 
     getOrSet(key: K, value: V): V {
         if (this.has(key)) return this.get(key)!;
+        this.set(key, value);
+        return value;
+    }
+
+    getOrLazySet(key: K, getValue: () => V): V {
+        if (this.has(key)) return this.get(key)!;
+        const value = getValue();
         this.set(key, value);
         return value;
     }

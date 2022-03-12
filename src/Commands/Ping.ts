@@ -1,6 +1,6 @@
 import { CommandContext } from "slash-create";
 import { ConfigStore } from "../Components/Stores/ConfigStore";
-import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
+import { Component, Dependency } from "../Utils/DependencyInjection";
 import { BaseCommand, CommandExec } from "./BaseCommand";
 
 @Component("Command/Ping")
@@ -10,11 +10,6 @@ export class PingCommand extends BaseCommand {
 
     @Dependency
     private readonly config!: ConfigStore;
-
-    @ComponentLoad
-    async load() {
-        await super.load();
-    }
 
     setupOptions() {
         return {

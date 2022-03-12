@@ -1,27 +1,13 @@
 import { GatewayServer, MessageOptions, SlashCreator } from "slash-create";
 import { Blob } from "../Blob";
-import { Component, ComponentLoad, Export, LazyDependency, PreUnload, Provider } from "../Utils/DependencyInjection";
+import { Component, LazyDependency, Load } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { DiscordClient } from "./Discord";
-import { DevCommand } from "../Commands/Dev";
-import { PingCommand } from "../Commands/Ping";
-import { SnipeCommand } from "../Commands/Snipe";
-import { FdlCommand } from "../Commands/Fdl";
 
-export interface SlashHandler extends Provider {}
-@Provider
 @Component("SlashHandler")
 export class SlashHandler extends SlashCreator {
     private readonly logger = new Logger("SlashHandler");
-
     @LazyDependency private readonly discord!: DiscordClient;
-
-    @Export private readonly devCommand: DevCommand;
-    @Export private readonly fdlCommand: FdlCommand;
-    @Export private readonly pingCommand: PingCommand;
-    @Export private readonly snipeCommand: SnipeCommand;
-
-    public ready: boolean;
 
     constructor() {
         super({
@@ -50,16 +36,9 @@ export class SlashHandler extends SlashCreator {
             .on("error", (e) => {
                 this.logger.error("Unknown slash error", e);
             });
-
-        this.devCommand = new DevCommand(this);
-        this.fdlCommand = new FdlCommand(this);
-        this.pingCommand = new PingCommand(this);
-        this.snipeCommand = new SnipeCommand(this);
-
-        this.ready = false;
     }
 
-    @ComponentLoad
+    @Load
     async load() {
         this.withServer(new GatewayServer(handler => {
             this.discord.on("rawWS", e => {
@@ -69,12 +48,6 @@ export class SlashHandler extends SlashCreator {
         }));
 
         await this.syncCommandsPromise();
-        this.ready = true;
-    }
-
-    @PreUnload
-    preUnload() {
-        this.ready = false;
     }
 
     async unload() {
@@ -83,8 +56,7 @@ export class SlashHandler extends SlashCreator {
     }
 
     public async requestSync() {
-        if (this.ready)
-            await this.syncCommandsPromise();
+        await this.syncCommandsPromise();
     }
 
     /** Copy of {@link SlashCreator.syncCommands} to return a Promise instead */

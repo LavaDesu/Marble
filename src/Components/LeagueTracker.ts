@@ -4,7 +4,6 @@ import { EventEmitter } from "events";
 import {
     BeatmapLeaderboardScope,
     Gamemode,
-    Ramune,
     RequestNetworkError,
     RequestHandler,
     RequestType,
@@ -18,8 +17,9 @@ import { Collection } from "../Utils/Collection";
 import { ConfigStore } from "./Stores/ConfigStore";
 import { LeagueStore, LeagueMap } from "./Stores/LeagueStore";
 import { asyncMap } from "../Utils/Helpers";
-import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
+import { Component, Load, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
+import { WrappedRamune } from "./WrappedRamune";
 
 export interface TrackerEvents<T> {
     (event: "newScore", listener: (score: Score) => void): T;
@@ -34,7 +34,7 @@ export class LeagueTracker extends EventEmitter implements Component {
 
     @Dependency private readonly config!: ConfigStore;
     @Dependency private readonly leagueStore!: LeagueStore;
-    @Dependency private readonly ramune!: Ramune;
+    @Dependency private readonly ramune!: WrappedRamune;
 
     private trackTimer?: NodeJS.Timer;
     private readonly requestHandler = new RequestHandler({
@@ -70,7 +70,7 @@ export class LeagueTracker extends EventEmitter implements Component {
         this.recording = true;
     }
 
-    @ComponentLoad
+    @Load
     async load() {
         if (this.trackTimer)
             clearInterval(this.trackTimer);

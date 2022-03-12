@@ -1,9 +1,9 @@
 import { Collection } from "./Collection";
+import type { Component } from "./DependencyInjection";
 
-export type Constructor<T = unknown> = { new (...args: any[]): T };
-/* https://github.com/microsoft/TypeScript/issues/3841 */
-/* eslint-disable-next-line @typescript-eslint/ban-types */
-export type Constructable<T = unknown> = Function | Constructor<T>;
+export type Constructor<T = Component> = {
+    new (...args: any[]): T;
+};
 
 type CollectionTypes<M> = { [K in keyof M]-?: M[K] extends Collection<any, any> ? K : never }[keyof M];
 type Targets<M> = { [ P in keyof M]: any };
@@ -30,7 +30,7 @@ export class ReflectionScope<M, K extends Targets<M>> {
             Reflect.defineMetadata(this.symbols[metadataKey], setValue, target);
     }
 
-    public get<T extends keyof M>(metadataKey: T, target: K[T], key?: string | symbol): M[T] | undefined {
+    public get<T extends keyof M>(metadataKey: T, target: K[T], key?: string | symbol): M[T] {
         if (typeof target !== "function" && !("constructor" in target))
             throw new Error(`Target is not a class constructor (found ${typeof target})`);
 

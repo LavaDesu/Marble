@@ -1,6 +1,6 @@
 import { Guild, Invite, Member } from "eris";
 import { DiscordClient } from "./Discord";
-import { Component, ComponentLoad, Dependency } from "../Utils/DependencyInjection";
+import { Component, Load, Dependency } from "../Utils/DependencyInjection";
 import { ConfigStore } from "./Stores/ConfigStore";
 import { Collection } from "../Utils/Collection";
 import { asyncForEach } from "../Utils/Helpers";
@@ -20,7 +20,7 @@ export class InviteTracker implements Component {
         this.invites = new Collection();
     }
 
-    @ComponentLoad
+    @Load
     public async load() {
         const settings = this.config.getInviteTrackingSettings();
         const guildIDs = Object.keys(settings.guilds);

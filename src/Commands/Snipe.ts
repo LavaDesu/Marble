@@ -3,7 +3,7 @@ import { CommandContext } from "slash-create";
 import { DiscordClient } from "../Components/Discord";
 import { ConfigStore } from "../Components/Stores/ConfigStore";
 import { Collection } from "../Utils/Collection";
-import { Component, ComponentLoad, Dependency, LazyDependency } from "../Utils/DependencyInjection";
+import { Component, Load, Dependency, LazyDependency } from "../Utils/DependencyInjection";
 import { BaseCommand, CommandExec } from "./BaseCommand";
 
 @Component("Command/Snipe")
@@ -16,7 +16,7 @@ export class SnipeCommand extends BaseCommand {
 
     private readonly lastMessages: Collection<string, Ephemeral<ModifiedMessage>> = new Collection();
 
-    @ComponentLoad
+    @Load
     async load() {
         await super.load();
 

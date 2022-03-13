@@ -92,7 +92,6 @@ module.exports = {
         "@typescript-eslint/prefer-readonly": "warn",
         "@typescript-eslint/promise-function-async": "error",
         "@typescript-eslint/quotes": ["warn", "double", { "avoidEscape": true }],
-        "@typescript-eslint/require-await": "warn",
         "@typescript-eslint/restrict-template-expressions": "error",
         "@typescript-eslint/return-await": ["error", "always"],
         "@typescript-eslint/semi": ["warn", "always"],

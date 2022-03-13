@@ -1,80 +1,70 @@
-import { ButtonStyle, CommandContext, CommandOptionType, ComponentActionRow, ComponentSelectOption, ComponentType, EmbedField, MessageEmbedOptions, MessageOptions } from "slash-create";
-import { DiscordClient } from "../Components/Discord";
+import { EmbedField, EmbedOptions, Message, TextChannel } from "eris";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { ConfigStore } from "../Components/Stores/ConfigStore";
 import { League, LeagueMap, LeaguePlayer, LeagueStore } from "../Components/Stores/LeagueStore";
 import { Collection } from "../Utils/Collection";
-import { Component, Dependency, LazyDependency } from "../Utils/DependencyInjection";
+import { Command, CommandComponent, GroupDefinition } from "../Utils/Commander";
+import { Use } from "../Utils/DependencyInjection";
 import { sanitiseDiscord } from "../Utils/Helpers";
-import { BaseCommand, Subcommand } from "./BaseCommand";
 
-@Component("Command/Fdl")
-export class FdlCommand extends BaseCommand {
+@CommandComponent("Command/Fdl")
+export class FdlCommand {
     protected name = "5dl";
     protected description = "Commands related to the 5 digit league";
 
-    @Dependency private readonly config!: ConfigStore;
-    @LazyDependency private readonly discord!: DiscordClient;
-    @Dependency private readonly leagueStore!: LeagueStore;
-    @Dependency private readonly tracker!: LeagueTracker;
+    @GroupDefinition("5dl", ".")
+    public async fdl(msg: Message, @Use() config: ConfigStore) {
+        if (!config.getCommandGuilds().includes(msg.channel.id))
+            return;
 
-    protected setupOptions() {
-        return {
-            defaultPermission: true,
-            guildIDs: this.config.getCommandGuilds()
-        };
+        return msg;
     }
 
-    @Subcommand("scores", "Get scores for a map", [{
-        name: "id",
-        description: "Map ID to skip the interactive prompts",
-        type: CommandOptionType.INTEGER,
-        required: false
-    }])
-    public async scores(ctx: CommandContext) {
-        this.discord.componentQueue.add(ctx);
-
-        const map = ctx.options.scores.id
-            ? this.leagueStore.getMap(ctx.options.scores.id)
-            : await this.promptScores(ctx);
+    @Command({
+        name: "scores",
+        group: "5dl",
+        description: "Get scores for a map"
+    })
+    public async scores(
+        msg: Message, id: number,
+        @Use() config: ConfigStore,
+        @Use() leagueStore: LeagueStore,
+        @Use() tracker: LeagueTracker
+    ) {
+        let map: LeagueMap | undefined;
+        if (id)
+            map = leagueStore.getMap(id);
+        else
+            return;
 
         if (!map) {
-            const msg: MessageOptions = {
-                embeds: [{
-                    color: 0xFF0000,
-                    description: "Unknown map"
-                }],
-                components: []
-            };
-            if (ctx.messageID)
-                ctx.editOriginal(msg);
-            else
-                ctx.send(msg);
+            const res = await msg.channel.createMessage("Map not found!");
+            setTimeout(async () => await res.delete(), 5e3);
             return;
         }
 
-        const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
+        const sender = leagueStore.getPlayerByDiscord(msg.author.id);
         if (sender)
-            await this.tracker.refreshPlayer(sender.osu.id);
+            await tracker.refreshPlayer(sender.osu.id);
 
-        const scores = this.tracker.getMapScores(map.map.id)?.valuesAsArray() ?? [];
+        const scores = tracker.getMapScores(map.map.id)?.valuesAsArray() ?? [];
 
         const fields: EmbedField[] = scores
-            .filter(score => map.league.players.has(score.user!.id))
+            .filter(score => map!.league.players.has(score.user!.id))
             .sort((a, b) => b.score - a.score)
             .map((score, rank) => ({
                 name: `#${rank + 1} - **${score.user!.username}**`,
                 value: [
                     `Score: **${score.score.toLocaleString()}**${score.mods.length ? ` **+${score.mods.join("")}**` : ""}`,
                     `Accuracy: **${Math.round(score.accuracy * 10000) / 100}%**`,
-                    `Rank: ${this.config.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
-                    `Combo: **${score.max_combo}**/${map.map.maxCombo!}x`,
+                    `Rank: ${config.getRankEmote(score.rank)!} - ${score.statistics.count_300}/${score.statistics.count_100}/${score.statistics.count_50}/${score.statistics.count_miss}`,
+                    `Combo: **${score.max_combo}**\/${map!.map.maxCombo!}x`,
                     `Set <t:${(new Date(score.created_at).getTime() / 1000).toString()}:R>`,
                     score.best_id ? `[View on osu](https://osu.ppy.sh/scores/osu/${score.best_id})` : undefined
                 ].filter(s => s !== undefined).join("\n")
             }));
 
-        const embed: MessageEmbedOptions = {
+        const embed: EmbedOptions = {
             title: `${map.beatmapset.artist} - ${map.beatmapset.title} [${map.map.version}]`,
             url: `https://osu.ppy.sh/b/${map.map.id}`,
             thumbnail: { url: `https://b.ppy.sh/thumb/${map.beatmapset.id}l.jpg` },
@@ -82,12 +72,13 @@ export class FdlCommand extends BaseCommand {
                 `League = ${map.league.name}`,
                 `Week = ${map.week.number}`,
                 `Map ID = ${map.map.id}`,
-                `Required Mods = ${this.leagueStore.getFriendlyMods(map.map.id)}`
+                `Required Mods = ${leagueStore.getFriendlyMods(map.map.id)}`
             ].join("\n"),
             fields: fields.slice(0, 3)
         };
-        ctx.initiallyResponded = true;
+        await msg.channel.createMessage({ embed });
 
+        /*
         let isFull = false;
         const showAllComponent = (): ComponentActionRow => ({
             type: ComponentType.ACTION_ROW,
@@ -116,8 +107,10 @@ export class FdlCommand extends BaseCommand {
                 components: fields.length > 3 ? [showAllComponent()] : []
             });
         });
+        */
     }
 
+    /*
     private async promptScores(ctx: CommandContext) {
         let resolve: (map: LeagueMap) => void;
         const promise: Promise<LeagueMap> = new Promise(r => resolve = r);
@@ -191,10 +184,11 @@ export class FdlCommand extends BaseCommand {
 
         return await promise;
     }
+    */
 
     // TODO: update this dynamically instead of regenerating
-    private getLeaderboards(league: League, sender?: LeaguePlayer) {
-        const maps = this.tracker.getScores();
+    protected getLeaderboards(league: League, tracker: LeagueTracker, sender?: LeaguePlayer) {
+        const maps = tracker.getScores();
 
         const points: Collection<string, number> = new Collection();
         maps.forEach(map => {
@@ -215,27 +209,33 @@ export class FdlCommand extends BaseCommand {
         return points;
     }
 
-    // TODO
-    @Subcommand("leaderboards", "Gets the current leaderboards for a league"/*, [{
-        name: "league",
-        description: "League to get leaderboards for",
-        required: true,
-        type: CommandOptionType.STRING
-        choices: this.leagueStore.getLeagues().keysAsArray().map(name => ({ name, value: name }))
-    }]*/)
-    public async leaderboards(ctx: CommandContext) {
-        /*const league = this.leagueStore.getLeague(ctx.options.league);
-        if (!league) {
-            await ctx.editOriginal("Unknown league");
-            return;
-        }*/
-        const league = this.leagueStore.getLeagues().valuesAsArray()[0];
+    @Command({
+        name: "lb",
+        group: "5dl",
+        description: "Gets the current leaderboards for a league"
+    })
+    public async leaderboards(
+        msg: Message, leagueName: string,
+        @Use() leagueStore: LeagueStore,
+        @Use() tracker: LeagueTracker
+    ) {
+        let league: League | undefined;
+        if (leagueName) {
+            league = leagueStore.getLeague(leagueName);
 
-        const sender = this.leagueStore.getPlayerByDiscord(ctx.user.id);
+            if (!league) {
+                const res = await msg.channel.createMessage("League not found!");
+                setTimeout(async () => await res.delete(), 5e3);
+                return;
+            }
+        } else
+            league = leagueStore.getLeagues().valuesAsArray()[0];
+
+        const sender = leagueStore.getPlayerByDiscord(msg.author.id);
         if (sender)
-            await this.tracker.refreshPlayer(sender.osu.id);
+            await tracker.refreshPlayer(sender.osu.id);
 
-        const points = this.getLeaderboards(league, sender);
+        const points = this.getLeaderboards(league, tracker, sender);
 
         const fields = [
             {
@@ -258,7 +258,7 @@ export class FdlCommand extends BaseCommand {
                 fields[1].value += `${entry[1]} points\n`;
             });
 
-        await ctx.editOriginal({
+        await msg.channel.createMessage({
             embeds: [{
                 title: `Current Rankings - ${league.name} League`,
                 fields
@@ -266,19 +266,34 @@ export class FdlCommand extends BaseCommand {
         });
     }
 
-    // TODO: similar to above: multi-league
-    @Subcommand("pool", "Gets the current league mappool")
-    public async pool(ctx: CommandContext) {
-        const league = this.leagueStore.getLeagues().valuesAsArray()[0];
+    @Command({
+        name: "pool",
+        group: "5dl",
+        description: "Gets the current league mappool"
+    })
+    public async pool(
+        msg: Message, leagueName: string,
+        @Use() leagueStore: LeagueStore
+    ) {
+        let league: League | undefined;
+        if (leagueName) {
+            league = leagueStore.getLeague(leagueName);
 
-        await ctx.send({
+            if (!league) {
+                await msg.channel.createMessage("Unknown league");
+                return;
+            }
+        } else
+            league = leagueStore.getLeagues().valuesAsArray()[0];
+
+        await msg.channel.createMessage({
             embeds: [{
                 author: { name: `${league.name} League` },
                 fields: league.weeks.map(week => ({
                     name: `Week ${week.number}`,
                     value: week.maps
                         .map(map => {
-                            let mods = this.leagueStore.getFriendlyMods(map.map.id);
+                            let mods = leagueStore.getFriendlyMods(map.map.id);
                             if (mods === "Freemod :)")
                                 mods = "";
                             else
@@ -292,23 +307,25 @@ export class FdlCommand extends BaseCommand {
         });
     }
 
-    @Subcommand("player", "Gets league player information", [{
-        name: "username",
-        description: "The player's *exact* username. If omitted, will use yours if possible",
-        type: CommandOptionType.STRING,
-        required: false
-    }])
-    public async player(ctx: CommandContext) {
+    @Command({
+        name: "player",
+        group: "5dl",
+        description: "Gets league player information"
+    })
+    public async player(
+        msg: Message<TextChannel>, username: string,
+        @Use() leagueStore: LeagueStore,
+        @Use() tracker: LeagueTracker
+    ) {
         let player: LeaguePlayer | undefined;
-        if (ctx.options.player.username)
-            player = this.leagueStore.getPlayers().find(user => user.osu.username === ctx.options.player.username);
+        if (username)
+            player = leagueStore.getPlayers().find(user => user.osu.username === username);
         else
-            player = this.leagueStore.getPlayerByDiscord(ctx.user.id);
+            player = leagueStore.getPlayerByDiscord(msg.author.id);
 
         if (!player) {
-            await ctx.send("Player not found!", {
-                ephemeral: true
-            });
+            const res = await msg.channel.createMessage("Player not found!");
+            setTimeout(async () => await res.delete(), 5e3);
             return;
         }
         const league = player.league;
@@ -326,7 +343,7 @@ export class FdlCommand extends BaseCommand {
             }
         ];
 
-        const scores = this.tracker.getScores();
+        const scores = tracker.getScores();
 
         league.weeks.forEach(week => {
             week.maps.forEach(map => {
@@ -348,7 +365,7 @@ export class FdlCommand extends BaseCommand {
             fields[1].value += "\n";
         });
 
-        await ctx.send({
+        await msg.channel.createMessage({
             embeds: [{
                 author: {
                     name: sanitiseDiscord(player.osu.username),

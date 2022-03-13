@@ -10,7 +10,6 @@ import {
     ScoreType
 } from "ramune";
 import type { BeatmapExtended, Score } from "ramune/lib/Responses";
-import { MessageEmbedOptions } from "slash-create";
 
 import { Blob } from "../Blob";
 import { Collection } from "../Utils/Collection";
@@ -20,6 +19,7 @@ import { asyncMap } from "../Utils/Helpers";
 import { Component, Load, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { WrappedRamune } from "./WrappedRamune";
+import { EmbedOptions } from "eris";
 
 export interface TrackerEvents<T> {
     (event: "newScore", listener: (score: Score) => void): T;
@@ -236,7 +236,7 @@ export class LeagueTracker extends EventEmitter implements Component {
         const beatmapset = map.beatmapset;
         const user = score.user!;
 
-        const embed: MessageEmbedOptions = {
+        const embed: EmbedOptions = {
             author: {
                 name: `${beatmapset.artist} - ${beatmapset.title} [${beatmap.version}]` + (score.mods.length ? " +" + score.mods.join("") : ""),
                 url: `https://osu.ppy.sh/b/${beatmap.id}`

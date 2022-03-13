@@ -1,25 +1,17 @@
-import { EmbedOptions, User } from "eris";
-import { CommandContext } from "slash-create";
+import { EmbedOptions, Message, User } from "eris";
 import { DiscordClient } from "../Components/Discord";
-import { ConfigStore } from "../Components/Stores/ConfigStore";
 import { Collection } from "../Utils/Collection";
-import { Component, Load, Dependency, LazyDependency } from "../Utils/DependencyInjection";
-import { BaseCommand, CommandExec } from "./BaseCommand";
+import { Command, CommandComponent } from "../Utils/Commander";
+import { Load, LazyDependency } from "../Utils/DependencyInjection";
 
-@Component("Command/Snipe")
-export class SnipeCommand extends BaseCommand {
-    protected name = "snipe";
-    protected description = "snipe the last message delete or edit in 30 seconds";
-
-    @Dependency private readonly config!: ConfigStore;
+@CommandComponent("Command/Snipe")
+export class SnipeCommand {
     @LazyDependency private readonly discord!: DiscordClient;
 
     private readonly lastMessages: Collection<string, Ephemeral<ModifiedMessage>> = new Collection();
 
     @Load
     async load() {
-        await super.load();
-
         this.discord.on("messageDelete", msg => {
             if ("content" in msg)
                 this.lastMessages.getOrSet(msg.channel.id, new Ephemeral(30e3)).set({
@@ -41,18 +33,15 @@ export class SnipeCommand extends BaseCommand {
         });
     }
 
-    setupOptions() {
-        return {
-            defaultPermission: true,
-            guildIDs: this.config.getCommandGuilds()
-        };
-    }
-
-    @CommandExec
-    private async exec(ctx: CommandContext) {
-        const message = this.lastMessages.get(ctx.channelID)?.get();
+    @Command({
+        name: "snipe",
+        prefix: ".",
+        description: "snipe the last message delete or edit in 30 seconds"
+    })
+    protected async exec(msg: Message) {
+        const message = this.lastMessages.get(msg.channel.id)?.get();
         if (!message)
-            return await ctx.send("Nothing to snipe!", { ephemeral: true });
+            return await msg.channel.createMessage("Nothing to snipe!");
 
         const friendlyType = message.type === "delete" ? "deleted" : "edited";
         const timestamp = Math.round((Date.now() - message.timestamp) / 1000);
@@ -81,7 +70,7 @@ export class SnipeCommand extends BaseCommand {
                 }
             ];
 
-        return await ctx.send({ embeds: [embed] });
+        return await msg.channel.createMessage({ embed });
     }
 }
 

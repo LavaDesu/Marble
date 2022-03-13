@@ -9,8 +9,10 @@ import { version as VERSION } from "../package.json";
 import { Component, Container, Dependency, Load } from "./Utils/DependencyInjection";
 import { DevCommand } from "./Commands/Dev";
 import { FdlCommand } from "./Commands/Fdl";
-import { PingCommand } from "./Commands/Ping";
 import { SnipeCommand } from "./Commands/Snipe";
+import { CommandRegistry } from "./Components/CommandRegistry";
+
+import { PingCommand } from "./Commands/Ping";
 
 export const env = {
     development: process.env.NODE_ENV === "development",
@@ -37,6 +39,8 @@ export class Blob {
 
     @Dependency private readonly inviteTracker!: InviteTracker;
     @Dependency private readonly leagueTracker!: LeagueTracker;
+
+    @Dependency private readonly registry!: CommandRegistry;
 
     @Dependency private readonly devCommand!: DevCommand;
     @Dependency private readonly fdlCommand!: FdlCommand;

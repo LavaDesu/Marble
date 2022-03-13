@@ -94,7 +94,9 @@ export function LazyDependency(target: Component, key: string) {
 
 // Method Decorators
 
-export function Load(target: Component, key: string, _descriptor: PropertyDescriptor) {
+export function Load(target: Component, key: string, descriptor: PropertyDescriptor) {
+    Inject(target, key, descriptor);
+
     const cls = target.constructor;
     const retType = Reflector.get("DesignReturnType", target, key);
     if (retType === Promise)

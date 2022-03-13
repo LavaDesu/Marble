@@ -3,7 +3,7 @@ import { Lock } from "ramune";
 import { Collection } from "../Collection";
 import { Logger } from "../Logger";
 import { Constructor } from "../Reflection";
-import { Component, ComponentReflector } from "./Component";
+import { type Component, ComponentReflector } from "./Component";
 
 const globalScope = Symbol("Global");
 export class Container {
@@ -122,6 +122,8 @@ export class Container {
 
             const depName = ComponentReflector.get("Name", depCls);
             this.logger.debug(`[${name}] Loading loose dependency ${depName}`);
+            if (key === null)
+                return this.logger.debug(`[${name}] Dependency ${depName} is an injection`);
 
             const depDepandants = ComponentReflector.getCollection("Dependants", depInst);
             depDepandants.set(cls, key);

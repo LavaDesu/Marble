@@ -10,7 +10,8 @@ type MetadataMap = {
 
     Dependants: Collection<Constructor, string>;
     Dependencies: Collection<Constructor, string>;
-    LazyDependencies: Collection<Constructor, string>;
+    Injections: Collection<string, [index: number, preload: boolean][]>;
+    LazyDependencies: Collection<Constructor, string | null>;
 
     Name: string;
     IsAsync: boolean | undefined;
@@ -27,6 +28,7 @@ type MetadataTargetMap = {
 
     Dependants: Component;
     Dependencies: Constructor;
+    Injections: Constructor;
     LazyDependencies: Constructor;
 
     Name: Constructor;
@@ -44,6 +46,7 @@ const MetadataSymbols = {
 
     Dependants: Symbol("dependants"),
     Dependencies: Symbol("dependencies"),
+    Injections: Symbol("injections"),
     LazyDependencies: Symbol("lazyDependencies"),
 
     Name: Symbol("name"),
@@ -107,3 +110,49 @@ export function Unload(target: Component, key: string, _descriptor: PropertyDesc
     Reflector.define("UnloadFunction", key, cls);
 }
 
+
+export function Inject(target: Component, key: string, descriptor: PropertyDescriptor) {
+    const retType = Reflector.get("DesignReturnType", target, key);
+    if (retType !== Promise)
+        throw new Error("Inject applied on method that is not async");
+
+    const cls = target.constructor;
+    const paramTypes = Reflector.get("DesignParamTypes", target, key);
+    const deps = Reflector.getCollection("LazyDependencies", cls);
+    const injColl = Reflector.getCollection("Injections", cls);
+    const injections = injColl.get(key);
+    if (!injections)
+        return;
+
+    injections.forEach(([index, preload]) => {
+        if (!preload)
+            return;
+
+        deps.set(paramTypes[index] as any, null);
+    });
+    Reflector.setCollection("LazyDependencies", deps, cls);
+
+    const method = descriptor.value!;
+    descriptor.value = async function (...args: unknown[]) {
+        const container = Reflector.get("Container", this);
+
+        await Promise.all(injections.map(async ([index]) => {
+            const depInst = await container.get(paramTypes[index] as Constructor);
+            args[index] = depInst;
+        }));
+
+        return method.apply(this, args);
+    };
+}
+
+// Parameter Decorators
+
+export function Use(preload: boolean = true) {
+    return function (target: Component, key: string, pIndex: number) {
+        const cls = target.constructor;
+        const injColl = Reflector.getCollection("Injections", cls);
+        const injections = injColl.getOrSet(key, []);
+        injections.push([pIndex, preload]);
+        Reflector.setCollection("Injections", injColl, cls);
+    };
+}

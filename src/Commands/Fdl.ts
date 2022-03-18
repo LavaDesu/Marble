@@ -1,7 +1,9 @@
-import { EmbedField, EmbedOptions, Message, TextChannel } from "eris";
+import { ActionRow, ComponentInteractionSelectMenuData, Constants as ErisConstants, EmbedField, EmbedOptions, InteractionButton, Message, SelectMenu, SelectMenuOptions, TextChannel } from "eris";
+import { ComponentManager } from "../Components/ComponentManager";
 import { LeagueTracker } from "../Components/LeagueTracker";
 import { ConfigStore } from "../Components/Stores/ConfigStore";
 import { League, LeagueMap, LeaguePlayer, LeagueStore } from "../Components/Stores/LeagueStore";
+import { Utils } from "../Utils";
 import { Collection } from "../Utils/Collection";
 import { Command, CommandComponent, GroupDefinition } from "../Utils/Commander";
 import { Use } from "../Utils/DependencyInjection";
@@ -29,13 +31,14 @@ export class FdlCommand {
         msg: Message, id: number,
         @Use() config: ConfigStore,
         @Use() leagueStore: LeagueStore,
-        @Use() tracker: LeagueTracker
+        @Use() tracker: LeagueTracker,
+        @Use() cm: ComponentManager
     ) {
         let map: LeagueMap | undefined;
         if (id)
             map = leagueStore.getMap(id);
         else
-            return;
+            map = await this.promptScores(msg, cm, leagueStore);
 
         if (!map) {
             const res = await msg.channel.createMessage("Map not found!");
@@ -72,71 +75,65 @@ export class FdlCommand {
                 `League = ${map.league.name}`,
                 `Week = ${map.week.number}`,
                 `Map ID = ${map.map.id}`,
+                // FIXME: Hardcoded command name
+                `Short Command = \`.scores ${map.map.id}\``,
                 `Required Mods = ${leagueStore.getFriendlyMods(map.map.id)}`
             ].join("\n"),
             fields: fields.slice(0, 3)
         };
-        await msg.channel.createMessage({ embed });
 
-        /*
         let isFull = false;
-        const showAllComponent = (): ComponentActionRow => ({
-            type: ComponentType.ACTION_ROW,
-            components: [{
-                type: ComponentType.BUTTON,
-                style: ButtonStyle.PRIMARY,
-                label: isFull ? "Show only top 3 scores" : "Show all scores",
-                custom_id: "show_all"
-            }]
-        });
-
-        await ctx.editOriginal({
-            embeds: [embed],
-            components: fields.length > 3 ? [showAllComponent()] : []
-        });
-
-        ctx.registerComponent("show_all", async btnCtx => {
+        const showAllButton = (): InteractionButton => cm.register(async int => {
             if (isFull)
                 embed.fields = fields.slice(0, 3);
             else
                 embed.fields = fields;
             isFull = !isFull;
 
-            await btnCtx.editParent({
-                embeds: [embed],
-                components: fields.length > 3 ? [showAllComponent()] : []
-            });
+            await int.editParent({ embeds: [embed], components: showAllComponent() });
+        }, {
+            type: ErisConstants.ComponentTypes.BUTTON,
+            style: ErisConstants.ButtonStyles.PRIMARY,
+            label: isFull ? "Show only top 3 scores" : "Show all scores"
         });
-        */
+        const showAllComponent = () => Utils.wrapComponents(showAllButton());
+
+        await msg.channel.createMessage({ embed, components: fields.length > 3 ? showAllComponent() : undefined });
     }
 
-    /*
-    private async promptScores(ctx: CommandContext) {
+    protected async promptScores(
+        msg: Message,
+        cm: ComponentManager,
+        leagueStore: LeagueStore
+    ) {
         let resolve: (map: LeagueMap) => void;
         const promise: Promise<LeagueMap> = new Promise(r => resolve = r);
 
-        const player = this.leagueStore.getPlayerByDiscord(ctx.user.id);
-        let league = player ? player.league : this.leagueStore.getLeagues().valuesAsArray()[0];
+        const player = leagueStore.getPlayerByDiscord(msg.author.id);
+        let league = player ? player.league : leagueStore.getLeagues().valuesAsArray()[0];
         let map: LeagueMap;
 
-        await ctx.fetch();
-
-        const selectLeagueComponent = (): ComponentActionRow => ({
-            type: ComponentType.ACTION_ROW,
-            components: [{
-                type: ComponentType.SELECT,
-                custom_id: "select_league",
-                min_values: 1,
-                max_values: 1,
-                options: this.leagueStore.getLeagues().map(mapLeague => ({
-                    label: `${mapLeague.name} League`,
-                    value: mapLeague.name,
-                    default: league === mapLeague
-                }))
-            }]
+        const selectLeagueComponent = (): SelectMenu => cm.register(async int => {
+            const selected = (int.data as ComponentInteractionSelectMenuData).values.join("");
+            league = leagueStore.getLeague(selected)!;
+            await int.editParent({
+                embeds: [{
+                    description: "Select a map!"
+                }],
+                components: createComponents()
+            });
+        }, {
+            type: ErisConstants.ComponentTypes.SELECT_MENU,
+            min_values: 1,
+            max_values: 1,
+            options: leagueStore.getLeagues().map(mapLeague => ({
+                label: `${mapLeague.name} League`,
+                value: mapLeague.name,
+                default: league === mapLeague
+            }))
         });
-        const selectMapComponent = (): ComponentActionRow => {
-            const options: ComponentSelectOption[] = [];
+        const selectMapComponent = (): SelectMenu => {
+            const options: SelectMenuOptions[] = [];
             league.weeks.forEach((leagueWeek, weekNum) =>
                 leagueWeek.maps.map((weekMap, id, index) =>
                     options.push({
@@ -147,44 +144,34 @@ export class FdlCommand {
                     })
                 )
             );
-            return {
-                type: ComponentType.ACTION_ROW,
-                components: [{
-                    type: ComponentType.SELECT,
-                    custom_id: "select_map",
-                    placeholder: "Select a map",
-                    min_values: 1,
-                    max_values: 1,
-                    options
-                }]
-            };
+            return cm.register(async int => {
+                const selected = (int.data as ComponentInteractionSelectMenuData).values.join("");
+                const [weekNum, mapID] = selected.split("_").map(p => parseInt(p));
+                map = league.weeks.get(weekNum)!.maps.get(mapID)!;
+                await int.acknowledge();
+                await int.deleteOriginalMessage();
+                resolve!(map);
+            }, {
+                type: ErisConstants.ComponentTypes.SELECT_MENU,
+                custom_id: "select_map",
+                placeholder: "Select a map",
+                min_values: 1,
+                max_values: 1,
+                options
+            });
         };
 
-        await ctx.send({
-            embeds: [{
-                description: `League = ${league.name}`
-            }],
-            components: [selectLeagueComponent(), selectMapComponent()]
-        });
+        const createComponents = (): ActionRow[] => Utils.wrapComponents([selectLeagueComponent(), selectMapComponent()]);
 
-        ctx.registerComponent("select_league", async selectCtx => {
-            league = this.leagueStore.getLeague(selectCtx.values.join(""))!;
-            await selectCtx.editParent({
-                embeds: [{
-                    description: `League = ${league.name}`
-                }],
-                components: [selectLeagueComponent(), selectMapComponent()]
-            });
-        });
-        ctx.registerComponent("select_map", selectCtx => {
-            const [weekNum, mapID] = selectCtx.values.join("").split("_").map(p => parseInt(p));
-            map = league.weeks.get(weekNum)!.maps.get(mapID)!;
-            resolve!(map);
+        await msg.channel.createMessage({
+            embeds: [{
+                description: "Select a map!"
+            }],
+            components: createComponents()
         });
 
         return await promise;
     }
-    */
 
     // TODO: update this dynamically instead of regenerating
     protected getLeaderboards(league: League, tracker: LeagueTracker, sender?: LeaguePlayer) {

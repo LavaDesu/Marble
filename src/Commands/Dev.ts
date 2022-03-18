@@ -1,5 +1,5 @@
-import { Message } from "eris";
 import * as fs from "fs/promises";
+import { Message } from "eris";
 import { Blob } from "../Blob";
 import { Command, CommandComponent, GroupDefinition } from "../Utils/Commander";
 import { LeagueTracker } from "../Components/LeagueTracker";
@@ -13,9 +13,9 @@ export class DevCommand {
     @GroupDefinition("dev", ".dev ")
     protected async dev(msg: Message) {
         if (msg.author.id !== Blob.Environment.devID)
-            return;
+            return false;
 
-        return msg;
+        return true;
     }
 
     @Command({

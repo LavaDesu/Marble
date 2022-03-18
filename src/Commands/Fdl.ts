@@ -15,9 +15,9 @@ export class FdlCommand {
     @GroupDefinition("5dl", ".")
     public async fdl(msg: Message, @Use() config: ConfigStore) {
         if (!config.getCommandGuilds().includes(msg.channel.id))
-            return;
+            return false;
 
-        return msg;
+        return true;
     }
 
     @Command({

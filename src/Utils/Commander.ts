@@ -59,8 +59,9 @@ export function CommandComponent(name?: string) {
 
 // Method Decorators
 
+type GroupDefinitionDescriptor = TypedPropertyDescriptor<(...args: any[]) => Promise<boolean>>;
 export function GroupDefinition(name: string, prefix?: string) {
-    return function (target: Component, key: string, descriptor: PropertyDescriptor) {
+    return function (target: Component, key: string, descriptor: GroupDefinitionDescriptor) {
         Inject(target, key, descriptor);
 
         const cls = target.constructor;

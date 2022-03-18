@@ -24,15 +24,13 @@ export class CommandRegistry {
     }
 
     protected async handleMessage(msg: Message) {
-        // NOTE: direct static member access; will not work when extended
-        for (const [prefix, [component, key, group]] of CommandRegistry.commands)
+        for (const [prefix, [component, key, group]] of (this.constructor as typeof CommandRegistry).commands)
             if (msg.content.startsWith(prefix)) {
-                const processed: Message | undefined = group ? component[group](msg) : msg;
-                // Undefined if the group processor wants to cancel execution
-                if (!processed)
+                const shouldAllow: boolean = group ? await component[group](msg) : msg;
+                if (!shouldAllow)
                     return;
                 /* eslint-disable-next-line @typescript-eslint/return-await */
-                return await component[key](group ? component[group](msg) : msg);
+                return await component[key](msg);
             }
     }
 }

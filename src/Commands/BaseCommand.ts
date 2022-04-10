@@ -65,7 +65,6 @@ export abstract class BaseCommand {
             }
         }();
         this.slashInstance.registerCommand(this.command);
-        await this.slashInstance.requestSync();
     }
 
     protected async buildCommand() {
@@ -98,7 +97,6 @@ export abstract class BaseCommand {
             }
         }();
         this.slashInstance.registerCommand(this.command);
-        await this.slashInstance.requestSync();
     }
 
     protected async disableSubcommand(subcmdName: string) {

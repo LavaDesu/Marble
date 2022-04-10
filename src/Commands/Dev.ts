@@ -3,7 +3,7 @@ import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } f
 import { Blob } from "../Blob";
 import { DiscordClient } from "../Components/Discord";
 import { LeagueTracker } from "../Components/LeagueTracker";
-import { Component, Dependency } from "../Utils/DependencyInjection";
+import { Component, Dependency, Load } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { BaseCommand, Subcommand } from "./BaseCommand";
 
@@ -31,6 +31,15 @@ export class DevCommand extends BaseCommand {
             }
         };
     }
+
+    @Load
+    async load() {
+        await super.load();
+
+        // Always at least sync dev
+        await this.slashInstance.syncCommandsPromise();
+    }
+
 
     @Subcommand("sync", "re-sync commands")
     async sync(ctx: CommandContext) {

@@ -332,12 +332,12 @@ export class FdlCommand extends BaseCommand {
             week.maps.forEach(map => {
                 fields[0].value += `[${map.beatmapset.title}](https://osu.ppy.sh/b/${map.map.id})\n`;
 
-                let index = scores.get(map.map.id)!.valuesAsArray()
+                let index = scores.get(map.map.id)?.valuesAsArray()
                     .filter(score => league.players.has(score.user!.id))
                     .sort((a, b) => b.score - a.score)
                     .slice(0, 3)
                     .map(score => score.user!.username)
-                    .indexOf(player!.osu.username);
+                    .indexOf(player!.osu.username) ?? -1;
                 if (index < 0)
                     index = 3;
 

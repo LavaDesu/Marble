@@ -36,8 +36,9 @@ export class DevCommand extends BaseCommand {
     async load() {
         await super.load();
 
-        // Always at least sync dev
-        await this.slashInstance.syncCommandsPromise();
+        // In prod, always at least sync dev
+        if (!Blob.Environment.development)
+            await this.slashInstance.syncCommandsPromise();
     }
 
 

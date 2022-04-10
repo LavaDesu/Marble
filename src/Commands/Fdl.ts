@@ -25,18 +25,11 @@ export class FdlCommand extends BaseCommand {
         };
     }
 
-    @Subcommand("scores", "Get scores for a map", [{
-        name: "id",
-        description: "Map ID to skip the interactive prompts",
-        type: CommandOptionType.INTEGER,
-        required: false
-    }])
+    @Subcommand("scores", "Get scores for a map")
     public async scores(ctx: CommandContext) {
         this.discord.componentQueue.add(ctx);
 
-        const map = ctx.options.scores.id
-            ? this.leagueStore.getMap(ctx.options.scores.id)
-            : await this.promptScores(ctx);
+        const map = await this.promptScores(ctx);
 
         if (!map) {
             const msg: MessageOptions = {

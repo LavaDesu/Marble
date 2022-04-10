@@ -11,7 +11,7 @@ export interface LeagueConfig {
 }
 interface LeagueObject {
     players: [string, string][];
-    maps: [string, OperatorNode?][][];
+    maps: [string, OperatorNode?, string?][][];
 }
 
 @Component("Store/League")
@@ -88,7 +88,7 @@ export class LeagueStore {
                         return;
                     }
 
-                    const res: LeagueMap = { league, map, beatmapset, week };
+                    const res: LeagueMap = { league, map, beatmapset, week, requester: rawMap[2] };
                     if (rawMap[1]) {
                         res.mods = rawMap[1];
                         week.mods.set(map.id, rawMap[1]);
@@ -205,6 +205,7 @@ export interface LeagueMap {
     map: Beatmap;
     beatmapset: Beatmapset;
     mods?: OperatorNode;
+    requester?: string;
     week: LeagueWeek;
 }
 

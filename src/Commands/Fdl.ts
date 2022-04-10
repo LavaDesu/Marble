@@ -74,9 +74,10 @@ export class FdlCommand extends BaseCommand {
             description: [
                 `League = ${map.league.name}`,
                 `Week = ${map.week.number}`,
+                map.requester ? `Requester = ${map.requester}` : undefined,
                 `Map ID = ${map.map.id}`,
                 `Required Mods = ${this.leagueStore.getFriendlyMods(map.map.id)}`
-            ].join("\n"),
+            ].filter(i => i !== undefined).join("\n"),
             fields: fields.slice(0, 3)
         };
         ctx.initiallyResponded = true;
@@ -275,8 +276,11 @@ export class FdlCommand extends BaseCommand {
                             if (mods === "Freemod :)")
                                 mods = "";
                             else
-                                mods = "+" + mods;
-                            return `[**${map.beatmapset.title}** \\[${map.map.version}\\]](https://osu.ppy.sh/b/${map.map.id}) ${mods}`;
+                                mods = " +" + mods;
+
+                            const requester = map.requester ? ` — Requested by ${map.requester}` : "";
+
+                            return `[**${map.beatmapset.title}** \\[${map.map.version}\\]](https://osu.ppy.sh/b/${map.map.id})${mods}${requester}`;
                         })
                         .join("\n"),
                     inline: false

@@ -246,9 +246,10 @@ export class LeagueTracker extends EventEmitter implements Component {
             description: [
                 `League = ${map.league.name}`,
                 `Week = ${map.week.number}`,
+                map.requester ? `Requester = ${map.requester}` : undefined,
                 `Map ID = ${beatmap.id}`,
                 `Required Mods = ${this.leagueStore.getFriendlyMods(beatmap.id)}`
-            ].join("\n"),
+            ].filter(i => i !== undefined).join("\n"),
             fields: [
                 {
                     name: "Score Info",

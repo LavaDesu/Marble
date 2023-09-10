@@ -38,7 +38,7 @@ export class DevCommand extends BaseCommand {
         await super.load();
 
         // In prod, always at least sync dev
-        if (Blob.Environment.development)
+        if (!Blob.Environment.development)
             await this.slashInstance.syncCommandsPromise();
     }
 

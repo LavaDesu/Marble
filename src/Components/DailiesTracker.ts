@@ -2,14 +2,12 @@ import { readdir, readFile, writeFile } from "fs/promises";
 import { join as joinPaths } from "path";
 import { EventEmitter } from "events";
 import {
-    BeatmapLeaderboardScope,
     Gamemode,
-    RequestNetworkError,
     RequestHandler,
     RequestType,
     ScoreType
 } from "ramune";
-import type { BeatmapExtended, Score } from "ramune/lib/Responses";
+import type { Score } from "ramune/lib/Responses";
 import { MessageEmbedOptions } from "slash-create";
 
 import { Blob } from "../Blob";
@@ -79,7 +77,6 @@ export class DailiesTracker extends EventEmitter implements Component {
 
         this.trackTimer = setInterval(this.refresh.bind(this), 60e3);
         this.dailiesStore.on("mapReset", this.newMap.bind(this));
-        await this.syncScores();
         await this.replayScores();
         await this.updateScores();
     }
@@ -107,43 +104,6 @@ export class DailiesTracker extends EventEmitter implements Component {
         for (const score of scores)
             await this.process(score, false, false);
 
-        return;
-    }
-
-    public async syncScores() {
-        await this.dailiesStore.getMaps().asyncMap(async dailyMap => {
-            if (!(dailyMap.map.raw as BeatmapExtended).is_scoreable) return;
-
-            const res = await this.dailiesStore.getPlayers()
-                .asyncMap(async player => {
-                    try {
-                        return (await this.ramune.getBeatmapUserScore(
-                            dailyMap.map.id.toString(),
-                            player.id.toString(),
-                            {
-                                mode: "osu",
-                                type: BeatmapLeaderboardScope.Global
-                            }
-                        )).score;
-                    } catch (error) {
-                        if (
-                            (error as any)?.type === "network" &&
-                            (error as RequestNetworkError).code === 404
-                        )
-                            return;
-
-                        this.logger.error(`Failed fetching scores of ${player.id} during sync`, error);
-                        return;
-                    }
-                });
-
-            const filtered = res
-                .filter((score): score is Score => score !== undefined)
-                .sort((a, b) => b.score - a.score);
-
-            for (const score of filtered)
-                await this.process(score, false);
-        });
         return;
     }
 

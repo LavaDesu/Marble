@@ -239,6 +239,9 @@ export class DailiesStore extends EventEmitter {
     public getPlayers() {
         return this.players;
     }
+    public getPlayersByDiscord() {
+        return this.discordPlayers;
+    }
 
     public async sync() {
         const maps = this.maps.valuesAsArray().map(m => {
@@ -254,7 +257,7 @@ export class DailiesStore extends EventEmitter {
         });
         const players = this.players.valuesAsArray().map(m => {
             const id = m.id;
-            const did = this.discordPlayers.entriesArray().find(i => i[1] === m)![0];
+            const did = this.getDiscordFromOsu(id);
 
             return <DailiesObject["players"][0]>[did, id];
         });

@@ -1,8 +1,10 @@
 import { Mod } from "ramune";
 import { CommandContext, CommandOptionType } from "slash-create";
 import { Blob } from "../Blob";
+import { DailiesTracker } from "../Components/DailiesTracker";
 import { DailiesStore, OperatorNode } from "../Components/Stores/DailiesStore";
-import { Component, Dependency, Load } from "../Utils/DependencyInjection";
+import { WrappedRamune } from "../Components/WrappedRamune";
+import { Component, Dependency, Inject, Load, Use } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { BaseCommand, Subcommand } from "./BaseCommand";
 
@@ -40,15 +42,82 @@ export class DailiesCommand extends BaseCommand {
         }] });
     }
 
-    @Subcommand("remove", "removes a map from the pool only if it hasn't been played", [{
+    @Subcommand("remove_player", "removes a player", [{
+        type: CommandOptionType.INTEGER,
+        name: "user",
+        description: "osu user id",
+        min_value: 0,
+        required: true
+    }])
+    async removePlayer(ctx: CommandContext) {
+        this.logger.debug("remove", ctx.options.remove_player.user);
+        const osuID: number = ctx.options.remove_player.user;
+        const discID = this.store.getDiscordFromOsu(osuID)!;
+
+        const players = this.store.getPlayers();
+        const discordPlayers = this.store.getPlayersByDiscord();
+        if (!players.has(osuID)) {
+            await ctx.send("user not found!");
+            return;
+        }
+
+        players.delete(osuID);
+        discordPlayers.delete(discID);
+        await this.store.sync();
+        await ctx.send("user removed");
+    }
+
+    @Subcommand("add_player", "adds a player to be tracked", [
+        {
+            type: CommandOptionType.USER,
+            name: "discord_user",
+            description: "discord user",
+            required: true
+        },
+        {
+            type: CommandOptionType.INTEGER,
+            name: "osu_user",
+            description: "osu user id",
+            min_value: 0,
+            required: true
+        }
+    ])
+    @Inject
+    async addPlayer(ctx: CommandContext, @Use() ramune: WrappedRamune, @Use() tracker: DailiesTracker) {
+        this.logger.debug("add", ctx.options.add_player);
+        const discID: string = ctx.options.add_player.discord_user;
+        const osuID: number = ctx.options.add_player.osu_user;
+        const players = this.store.getPlayers();
+        const discordPlayers = this.store.getPlayersByDiscord();
+        if (players.has(osuID)) {
+            await ctx.send("user is already added!");
+            return;
+        }
+
+        let user;
+        try {
+            user = await ramune.getUser(osuID);
+        } catch(e) {
+            await ctx.send("user not found or error occurred!");
+            return;
+        }
+
+        players.set(osuID, user);
+        discordPlayers.set(discID, user);
+        await this.store.sync();
+        await tracker.refreshPlayer(osuID);
+        await ctx.send("user added: " + user.username);
+    }
+
+    @Subcommand("remove_map", "removes a map from the pool only if it hasn't been played", [{
         type: CommandOptionType.INTEGER,
         name: "map",
         description: "map id to remove",
         min_value: 0,
         required: true
     }])
-    async remove(ctx: CommandContext) {
-        const mapID: number = ctx.options.remove.map;
+    async removeMap(ctx: CommandContext) {
+        const mapID: number = ctx.options.remove_map.map;
         this.logger.debug("remove", mapID);
         const maps = this.store.getMaps();
         const map = maps.get(mapID);
@@ -67,7 +136,7 @@ export class DailiesCommand extends BaseCommand {
         await ctx.send("map removed");
     }
 
-    @Subcommand("add", "adds a map to the pool", [
+    @Subcommand("add_map", "adds a map to the pool", [
         {
             type: CommandOptionType.INTEGER,
             name: "map",
@@ -88,13 +157,13 @@ export class DailiesCommand extends BaseCommand {
             required: false
         }
     ])
-    async add(ctx: CommandContext) {
-        this.logger.debug("add", ctx.options.add);
+    async addMap(ctx: CommandContext) {
+        this.logger.debug("add", ctx.options.add_map);
         const {
             map: mapID,
             mods: oMods,
             submitter
-        }: { map: number; mods?: string; submitter?: string } = ctx.options.add;
+        }: { map: number; mods?: string; submitter?: string } = ctx.options.add_map;
 
         let mods: OperatorNode | undefined;
         if (oMods !== undefined)

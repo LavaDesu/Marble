@@ -12,3 +12,6 @@ export function sanitiseDiscord(message: string) {
     return message
         .replaceAll("_", "\\_");
 }
+export function capitalise(str: string) {
+    return str[0].toUpperCase() + str.slice(1);
+}

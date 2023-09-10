@@ -57,7 +57,7 @@ export class Container {
         }) as T;
     }
 
-    protected preInit<T>(cls: Constructor<T>): T {
+    protected preInit<T extends Component>(cls: Constructor<T>): T {
         const inst = new cls();
 
         if (!ComponentReflector.get("Name", cls))

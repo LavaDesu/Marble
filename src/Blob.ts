@@ -1,14 +1,14 @@
 import "reflect-metadata";
 
 import { DiscordClient } from "./Components/Discord";
-import { LeagueTracker } from "./Components/LeagueTracker";
+import { DailiesTracker } from "./Components/DailiesTracker";
 import { InviteTracker } from "./Components/InviteTracker";
 import { Logger } from "./Utils/Logger";
 
 import { version as VERSION } from "../package.json";
 import { Component, Container, Dependency, Load } from "./Utils/DependencyInjection";
+import { DailiesCommand } from "./Commands/Dailies";
 import { DevCommand } from "./Commands/Dev";
-import { FdlCommand } from "./Commands/Fdl";
 import { PingCommand } from "./Commands/Ping";
 import { SnipeCommand } from "./Commands/Snipe";
 
@@ -25,6 +25,7 @@ export const env = {
     webhookToken: process.env.BLOB_WEBHOOK_TOKEN ?? "",
 
     configPath: process.env.BLOB_CONFIG_PATH ?? "./data.json",
+    dailiesPath: process.env.BLOB_DAILIES_PATH ?? "./dailies.json",
     scorePath: process.env.BLOB_SCORE_PATH ?? "./scores"
 } as const;
 
@@ -36,10 +37,10 @@ export class Blob {
     public readonly logger = new Logger("Blob");
 
     @Dependency private readonly inviteTracker!: InviteTracker;
-    @Dependency private readonly leagueTracker!: LeagueTracker;
+    @Dependency private readonly dailiesTracker!: DailiesTracker;
 
+    @Dependency private readonly dailiesCommand!: DailiesCommand;
     @Dependency private readonly devCommand!: DevCommand;
-    @Dependency private readonly fdlCommand!: FdlCommand;
     @Dependency private readonly pingCommand!: PingCommand;
     @Dependency private readonly snipeCommand!: SnipeCommand;
 

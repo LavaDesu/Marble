@@ -9,6 +9,7 @@ tsconfig.tsbuildinfo
 .direnv
 
 # Data
+dailies.json
 data.json
 ignore/
 scores/

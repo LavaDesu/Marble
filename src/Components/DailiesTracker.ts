@@ -15,28 +15,30 @@ import { MessageEmbedOptions } from "slash-create";
 import { Blob } from "../Blob";
 import { Collection } from "../Utils/Collection";
 import { ConfigStore } from "./Stores/ConfigStore";
-import { LeagueStore, LeagueMap } from "./Stores/LeagueStore";
-import { asyncMap } from "../Utils/Helpers";
+import { DailiesStore, DailiesMap } from "./Stores/DailiesStore";
+import { asyncMap, capitalise } from "../Utils/Helpers";
 import { Component, Load, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { WrappedRamune } from "./WrappedRamune";
+import { DiscordClient } from "./Discord";
 
 export interface TrackerEvents<T> {
     (event: "newScore", listener: (score: Score) => void): T;
 }
-export interface LeagueTracker {
+export interface DailiesTracker {
     on: TrackerEvents<this>;
     once: TrackerEvents<this>;
 }
-@Component("Tracker/League")
-export class LeagueTracker extends EventEmitter implements Component {
-    private readonly logger = new Logger("Tracker/League");
+@Component("Tracker/Dailies")
+export class DailiesTracker extends EventEmitter implements Component {
+    private readonly logger = new Logger("Tracker/Dailies");
 
     @Dependency private readonly config!: ConfigStore;
-    @Dependency private readonly leagueStore!: LeagueStore;
+    @Dependency private readonly dailiesStore!: DailiesStore;
+    @Dependency private readonly discord!: DiscordClient;
     @Dependency private readonly ramune!: WrappedRamune;
 
-    private trackTimer?: NodeJS.Timer;
+    private trackTimer?: NodeJS.Timeout;
     private readonly requestHandler = new RequestHandler({
         defaultHost: "discord.com",
         rateLimit: {
@@ -76,6 +78,7 @@ export class LeagueTracker extends EventEmitter implements Component {
             clearInterval(this.trackTimer);
 
         this.trackTimer = setInterval(this.refresh.bind(this), 60e3);
+        this.dailiesStore.on("mapReset", this.newMap.bind(this));
         await this.syncScores();
         await this.replayScores();
         await this.updateScores();
@@ -108,15 +111,15 @@ export class LeagueTracker extends EventEmitter implements Component {
     }
 
     public async syncScores() {
-        await this.leagueStore.getMaps().asyncMap(async map => {
-            if (!(map.map.raw as BeatmapExtended).is_scoreable) return;
+        await this.dailiesStore.getMaps().asyncMap(async dailyMap => {
+            if (!(dailyMap.map.raw as BeatmapExtended).is_scoreable) return;
 
-            const res = await map.league.players
+            const res = await this.dailiesStore.getPlayers()
                 .asyncMap(async player => {
                     try {
                         return (await this.ramune.getBeatmapUserScore(
-                            map.map.id.toString(),
-                            player.osu.id.toString(),
+                            dailyMap.map.id.toString(),
+                            player.id.toString(),
                             {
                                 mode: "osu",
                                 type: BeatmapLeaderboardScope.Global
@@ -129,7 +132,7 @@ export class LeagueTracker extends EventEmitter implements Component {
                         )
                             return;
 
-                        this.logger.error(`Failed fetching scores of ${player.osu.id} during sync`, error);
+                        this.logger.error(`Failed fetching scores of ${player.id} during sync`, error);
                         return;
                     }
                 });
@@ -147,9 +150,9 @@ export class LeagueTracker extends EventEmitter implements Component {
     private async updateScores() {
         this.logger.info("Checking for lost scores");
         const lostScores: Score[] = [];
-        await this.leagueStore.getPlayers().asyncMap(async player => {
-            const plays = this.allScores.getOrSet(player.osu.id, []);
-            const cursor = this.ramune.getUserScores(player.osu.id, ScoreType.Recent, Gamemode.Osu);
+        await this.dailiesStore.getPlayers().asyncMap(async player => {
+            const plays = this.allScores.getOrSet(player.id, []);
+            const cursor = this.ramune.getUserScores(player.id, ScoreType.Recent, Gamemode.Osu);
             for await (const score of cursor.iterate(10)) {
                 if (plays.includes(score.id))
                     break;
@@ -168,12 +171,57 @@ export class LeagueTracker extends EventEmitter implements Component {
     }
 
     private async refresh() {
-        const res = await this.leagueStore.getPlayers().asyncMap(async player => await this.refreshPlayer(player.osu.id, false));
+        const res = await this.dailiesStore.getPlayers().asyncMap(async player => await this.refreshPlayer(player.id, false));
         const scores = res
             .flat(1)
             .sort((a, b) => a.id - b.id);
 
         await Promise.all(scores.map(async score => await this.process(score)));
+    }
+
+    protected async newMap(map?: DailiesMap) {
+        if (map === undefined)
+            return;
+
+        if (map.messageID !== undefined)
+            return;
+
+        const channelID = this.dailiesStore.motdChannel;
+        if (channelID === undefined)
+            return;
+
+        const beatmap = map.map;
+        const beatmapset = map.beatmapset;
+        const msg = await this.discord.createMessage(channelID, { embed: {
+            title: `${beatmapset.artist} - ${beatmapset.title} [${beatmap.version}]`,
+            description: `Ending <t:${Math.floor(map.timeRange[1] / 1000)}:R>`,
+            url: `https://osu.ppy.sh/b/${beatmap.id}`,
+            thumbnail: { url: `https://b.ppy.sh/thumb/${beatmapset.id}l.jpg` },
+            timestamp: new Date(map.timeRange[0]),
+            color: 0x00FF00,
+            fields: [
+                {
+                    name: "Beatmap Info",
+                    inline: false,
+                    value: [
+                        `Status: **${capitalise(beatmap.status)}**`,
+                        `Mapper: **${beatmapset.creator}**`,
+                        `Required Mods: **${this.dailiesStore.getFriendlyMods(beatmap.id)}**`,
+                        `Max Combo: **${beatmap.maxCombo ?? "Unknown"}**`,
+                        `Star Rating: **${beatmap.starRating}**`,
+                        `CS/AR/OD/HP: **${beatmap.cs.toFixed(1)}**/**${beatmap.ar.toFixed(1)}**/**${beatmap.accuracy.toFixed(1)}**/**${beatmap.drain.toFixed(1)}**`
+                    ].join("\n")
+                },
+                {
+                    name: "Scores",
+                    inline: false,
+                    value: ""
+                }
+            ]
+        } });
+
+        map.messageID = msg.id;
+        await this.dailiesStore.sync();
     }
 
     public async refreshPlayer(player: number, shouldProcess: boolean = true) {
@@ -208,18 +256,19 @@ export class LeagueTracker extends EventEmitter implements Component {
         if (this.recording && shouldStore)
             await writeFile(joinPaths(Blob.Environment.scorePath, `${score.id}.json`), JSON.stringify(score, undefined, 4));
 
-        // Check 1: Does the map exist in the player's league?
-        const league = this.leagueStore.getPlayer(score.user_id)?.league;
-        const map = this.leagueStore.getMap(score.beatmap!.id);
-        if (!map || map.league !== league) return;
+        // Check 1: Is the map the current map?
+        const map = this.dailiesStore.currentMap;
+        if (map?.map.id !== score.beatmap!.id)
+            return;
 
         // Check 2: Is this score higher than the previous score?
         const scores = this.scores.getOrSet(score.beatmap!.id, new Collection());
         const previousScore = scores.get(score.user_id);
-        if (previousScore && previousScore.score > score.score) return;
+        if (previousScore && previousScore.score > score.score)
+            return;
 
         // Check 3: Does the score have the necessary mods?
-        if (!this.leagueStore.testMods(map.map.id, score.mods))
+        if (!this.dailiesStore.testMods(map.map.id, score.mods))
             return;
 
         scores.set(score.user_id, score);
@@ -231,7 +280,7 @@ export class LeagueTracker extends EventEmitter implements Component {
         return;
     }
 
-    private async post(map: LeagueMap, score: Score) {
+    private async post(map: DailiesMap, score: Score) {
         const beatmap = map.map;
         const beatmapset = map.beatmapset;
         const user = score.user!;
@@ -244,11 +293,10 @@ export class LeagueTracker extends EventEmitter implements Component {
             thumbnail: { url: `https://b.ppy.sh/thumb/${beatmapset.id}l.jpg` },
             color: 0x33EB35,
             description: [
-                `League = ${map.league.name}`,
-                `Week = ${map.week.number}`,
+                `Map #${map.index + 1}`,
                 map.requester ? `Requester = ${map.requester}` : undefined,
                 `Map ID = ${beatmap.id}`,
-                `Required Mods = ${this.leagueStore.getFriendlyMods(beatmap.id)}`
+                `Required Mods = ${this.dailiesStore.getFriendlyMods(beatmap.id)}`
             ].filter(i => i !== undefined).join("\n"),
             fields: [
                 {
@@ -279,7 +327,33 @@ export class LeagueTracker extends EventEmitter implements Component {
                 embeds: [embed]
             }
         });
+        await this.updateMapScores();
     }
+
+    protected async updateMapScores() {
+        const map = this.dailiesStore.currentMap;
+        if (map?.messageID === undefined)
+            return;
+
+        const channelID = this.dailiesStore.motdChannel;
+        if (channelID === undefined)
+            return;
+
+        const msg = await this.discord.getMessage(channelID, map.messageID);
+        const embed = msg.embeds[0];
+
+        const scores = this.scores.get(map.map.id);
+        if (!scores)
+            return;
+
+        const desc = scores.map((score, osuID, index) =>
+            `${index + 1}. <@${this.dailiesStore.getDiscordFromOsu(osuID)!}> - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t>`
+        );
+
+        embed.fields![1].value = desc.join("\n");
+        await msg.edit({ embed });
+    }
+
 
     public toggleRecord(): boolean {
         return this.recording = !this.recording;

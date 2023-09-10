@@ -2,10 +2,11 @@ import * as fs from "fs/promises";
 import { ApplicationCommandPermissionType, CommandContext, CommandOptionType } from "slash-create";
 import { Blob } from "../Blob";
 import { DiscordClient } from "../Components/Discord";
-import { LeagueTracker } from "../Components/LeagueTracker";
-import { Component, Dependency, Load } from "../Utils/DependencyInjection";
+import { DailiesTracker } from "../Components/DailiesTracker";
+import { Component, Dependency, Inject, Load, Use } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { BaseCommand, Subcommand } from "./BaseCommand";
+import { DailiesStore } from "../Components/Stores/DailiesStore";
 
 @Component("Command/Dev")
 export class DevCommand extends BaseCommand {
@@ -14,7 +15,7 @@ export class DevCommand extends BaseCommand {
     protected readonly logger = new Logger("Command/Dev");
 
     @Dependency private readonly discord!: DiscordClient;
-    @Dependency private readonly tracker!: LeagueTracker;
+    @Dependency private readonly tracker!: DailiesTracker;
 
     protected setupOptions() {
         return {
@@ -37,10 +38,19 @@ export class DevCommand extends BaseCommand {
         await super.load();
 
         // In prod, always at least sync dev
-        if (!Blob.Environment.development)
+        if (Blob.Environment.development)
             await this.slashInstance.syncCommandsPromise();
     }
 
+    @Subcommand("renew", "renew map")
+    @Inject
+    async renewMap(ctx: CommandContext, @Use() store: DailiesStore) {
+        this.logger.debug("renew");
+        store.resetCurrentMap();
+        // _@ts-expect-error 2445
+        //await this.tracker.newMap(store.currentMap);
+        await ctx.send("renewed");
+    }
 
     @Subcommand("sync", "re-sync commands")
     async sync(ctx: CommandContext) {

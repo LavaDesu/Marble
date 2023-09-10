@@ -3,9 +3,8 @@ import type { ScoreRank } from "ramune";
 import { Blob } from "../../Blob";
 import { Component, Load } from "../../Utils/DependencyInjection";
 import { Logger } from "../../Utils/Logger";
-import type { LeagueConfig } from "./LeagueStore";
 
-export type Config = MainConfig & LeagueConfig;
+export type Config = MainConfig;
 
 interface MainConfig {
     commandGuilds: string[];

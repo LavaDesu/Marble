@@ -17,7 +17,7 @@ interface DailiesObject {
 }
 
 export interface StoreEvents<T> {
-    (event: "mapReset", listener: (map?: DailiesMap) => void): T;
+    (event: "mapReset", listener: (map?: DailiesMap, prev?: DailiesMap) => void): T;
 }
 export interface DailiesStore {
     on: StoreEvents<this>;
@@ -145,6 +145,7 @@ export class DailiesStore extends EventEmitter {
     }
 
     public resetCurrentMap() {
+        const prev = this.currentMap;
         this.currentMap = undefined;
         if (this.nextMapTimer)
             clearTimeout(this.nextMapTimer);
@@ -159,7 +160,7 @@ export class DailiesStore extends EventEmitter {
         });
         this.sync();
 
-        this.emit("mapReset", this.currentMap);
+        this.emit("mapReset", this.currentMap, prev);
     }
 
     public getFriendlyMods(mapID: number): string {

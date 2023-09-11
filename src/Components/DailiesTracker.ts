@@ -173,7 +173,7 @@ export class DailiesTracker extends EventEmitter implements Component {
         await Promise.all(scores.map(async score => await this.process(score)));
     }
 
-    protected async newMap(map?: DailiesMap) {
+    protected async newMap(map?: DailiesMap, prev?: DailiesMap) {
         if (map === undefined)
             return;
 
@@ -215,6 +215,16 @@ export class DailiesTracker extends EventEmitter implements Component {
         } });
 
         map.messageID = msg.id;
+
+        const prevID = prev?.messageID;
+        if (prevID) {
+            const prevMsg = await this.discord.getMessage(channelID, prevID);
+            const embed = prevMsg.embeds[0];
+            embed.description = embed.description?.replace("Ending", "Ended");
+            embed.color = 0xFF0000;
+            await prevMsg.edit({ embed });
+        }
+
         await this.store.sync();
     }
 

@@ -12,7 +12,7 @@ interface DailiesObject {
     motdChannel?: string;
     feedChannel?: string;
     epoch: number;
-    players: [discordID: string, osuID: number][];
+    players: [osuID: number, discordID?: string][];
     maps: [id: number, mods?: OperatorNode, submittedBy?: string, messageID?: string][];
 }
 
@@ -78,18 +78,22 @@ export class DailiesStore extends EventEmitter {
         this.feedChannel = data.feedChannel;
 
         await asyncForEach(data.players, async player => {
-            this.osuToDiscord.set(player[1], player[0]);
-            this.players.placehold(player[1]);
-            this.discordPlayers.placehold(player[0]);
+            this.players.placehold(player[0]);
+            if (player[1]) {
+                this.osuToDiscord.set(player[0], player[1]);
+                this.discordPlayers.placehold(player[1]);
+            }
+
             let osu;
             try {
-                osu = await this.ramune.getUser(player[1]);
+                osu = await this.ramune.getUser(player[0]);
             } catch(e) {
-                this.logger.error("missing user", player[1], e);
+                this.logger.error("missing user", player[0], e);
                 return;
             }
             this.players.set(osu.id, osu);
-            this.discordPlayers.set(player[0], osu);
+            if (player[1])
+                this.discordPlayers.set(player[1], osu);
         });
         data.maps.forEach(map => this.maps.placehold(map[0]));
         await asyncForEach(data.maps, async (rawMap, index) => {
@@ -219,19 +223,9 @@ export class DailiesStore extends EventEmitter {
         return false;
     }
 
-    public getMap(id: number) {
-        return this.maps.get(id);
-    }
-    public getPlayer(id: number) {
-        return this.players.get(id);
-    }
-    public getPlayerByDiscord(id: string) {
-        return this.discordPlayers.get(id);
-    }
     public getDiscordFromOsu(id: number) {
         return this.osuToDiscord.get(id);
     }
-
 
     public getMaps() {
         return this.maps;
@@ -256,10 +250,12 @@ export class DailiesStore extends EventEmitter {
             return res;
         });
         const players = this.players.valuesAsArray().map(m => {
-            const id = m.id;
-            const did = this.getDiscordFromOsu(id);
+            const ret: DailiesObject["players"][0] = [m.id];
+            const did = this.getDiscordFromOsu(m.id);
+            if (did)
+                ret[1] = did;
 
-            return <DailiesObject["players"][0]>[did, id];
+            return ret;
         });
         await fs.writeFile(Blob.Environment.dailiesPath, JSON.stringify({
             motdChannel: this.motdChannel,

@@ -51,8 +51,12 @@ export class DailiesCommand extends BaseCommand {
     }])
     async removePlayer(ctx: CommandContext) {
         this.logger.debug("remove", ctx.options.remove_player.user);
+        if (Blob.Environment.countryMode) {
+            await ctx.send("users can't be managed in country mode");
+            return;
+        }
         const osuID: number = ctx.options.remove_player.user;
-        const discID = this.store.getDiscordFromOsu(osuID)!;
+        const discID = this.store.getDiscordFromOsu(osuID);
 
         const players = this.store.getPlayers();
         const discordPlayers = this.store.getPlayersByDiscord();
@@ -62,7 +66,9 @@ export class DailiesCommand extends BaseCommand {
         }
 
         players.delete(osuID);
-        discordPlayers.delete(discID);
+        if (discID)
+            discordPlayers.delete(discID);
+
         await this.store.sync();
         await ctx.send("user removed");
     }
@@ -85,6 +91,10 @@ export class DailiesCommand extends BaseCommand {
     @Inject
     async addPlayer(ctx: CommandContext, @Use() ramune: WrappedRamune, @Use() tracker: DailiesTracker) {
         this.logger.debug("add", ctx.options.add_player);
+        if (Blob.Environment.countryMode) {
+            await ctx.send("users can't be managed in country mode");
+            return;
+        }
         const discID: string = ctx.options.add_player.discord_user;
         const osuID: number = ctx.options.add_player.osu_user;
         const players = this.store.getPlayers();

@@ -7,7 +7,7 @@ specifiers:
   eris: ^0.16.2
   eslint: ^7.32.0
   eslint-plugin-import: ^2.28.1
-  ramune: github:LavaDesu/Ramune#0.0.12
+  ramune: github:LavaDesu/Ramune#0.0.15
   reflect-metadata: ^0.1.13
   slash-create: ^5.13.0
   ts-node-dev: ^1.1.8
@@ -15,7 +15,7 @@ specifiers:
 
 dependencies:
   eris: 0.16.2
-  ramune: github.com/LavaDesu/Ramune/e213bd591e369845e21ade8f734f031656ea456a
+  ramune: github.com/LavaDesu/Ramune/4fd3cdd951349825254f32d509d6f8d2a2e1bc85
   reflect-metadata: 0.1.13
   slash-create: 5.13.0
 
@@ -2015,9 +2015,9 @@ packages:
     engines: {node: '>=6'}
     dev: true
 
-  github.com/LavaDesu/Ramune/e213bd591e369845e21ade8f734f031656ea456a:
-    resolution: {tarball: https://codeload.github.com/LavaDesu/Ramune/tar.gz/e213bd591e369845e21ade8f734f031656ea456a}
+  github.com/LavaDesu/Ramune/4fd3cdd951349825254f32d509d6f8d2a2e1bc85:
+    resolution: {tarball: https://codeload.github.com/LavaDesu/Ramune/tar.gz/4fd3cdd951349825254f32d509d6f8d2a2e1bc85}
     name: ramune
-    version: 0.0.12
+    version: 0.0.15
     engines: {node: '>=10.0.0'}
     dev: false

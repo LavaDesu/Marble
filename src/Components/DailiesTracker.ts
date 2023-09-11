@@ -3,9 +3,11 @@ import { join as joinPaths } from "path";
 import { EventEmitter } from "events";
 import {
     Gamemode,
+    RankingType,
     RequestHandler,
     RequestType,
-    ScoreType
+    ScoreType,
+    User as RamuneUser
 } from "ramune";
 import type { Score } from "ramune/lib/Responses";
 import { MessageEmbedOptions } from "slash-create";
@@ -32,9 +34,9 @@ export class DailiesTracker extends EventEmitter implements Component {
     private readonly logger = new Logger("Tracker/Dailies");
 
     @Dependency private readonly config!: ConfigStore;
-    @Dependency private readonly dailiesStore!: DailiesStore;
     @Dependency private readonly discord!: DiscordClient;
     @Dependency private readonly ramune!: WrappedRamune;
+    @Dependency private readonly store!: DailiesStore;
 
     private trackTimer?: NodeJS.Timeout;
     private readonly requestHandler = new RequestHandler({
@@ -48,6 +50,8 @@ export class DailiesTracker extends EventEmitter implements Component {
         id: Blob.Environment.webhookID,
         token: Blob.Environment.webhookToken
     };
+
+    protected countryUsers?: Collection<number, RamuneUser>;
 
     private recording: boolean;
 
@@ -76,9 +80,30 @@ export class DailiesTracker extends EventEmitter implements Component {
             clearInterval(this.trackTimer);
 
         this.trackTimer = setInterval(this.refresh.bind(this), 60e3);
-        this.dailiesStore.on("mapReset", this.newMap.bind(this));
+        this.store.on("mapReset", this.newMap.bind(this));
+
+        if (Blob.Environment.countryMode)
+            await this.fetchCountryUsers();
+
         await this.replayScores();
         await this.updateScores();
+    }
+
+    protected async fetchCountryUsers() {
+        this.logger.debug("Fetching country users");
+        this.countryUsers = new Collection();
+
+        for await (const ranking of this.ramune.getRankings(Gamemode.Osu, RankingType.Performance, {
+            country: "KH"
+        }).iterate(50)) {
+            if (!ranking.user || !ranking.user.is_active)
+                continue;
+
+            this.countryUsers.set(ranking.user!.id, new RamuneUser(this.ramune, ranking.user!, true));
+            if (this.countryUsers.size >= 50)
+                break;
+        }
+        this.logger.debug(`Fetched ${this.countryUsers.size} country users`);
     }
 
     public getScore(map: number, player: number) {
@@ -107,10 +132,17 @@ export class DailiesTracker extends EventEmitter implements Component {
         return;
     }
 
+    public getPlayers(): Collection<number, RamuneUser> {
+        if (this.countryUsers)
+            return this.countryUsers;
+        else
+            return this.store.getPlayers();
+    }
+
     private async updateScores() {
         this.logger.info("Checking for lost scores");
         const lostScores: Score[] = [];
-        await this.dailiesStore.getPlayers().asyncMap(async player => {
+        await this.getPlayers().asyncMap(async player => {
             const plays = this.allScores.getOrSet(player.id, []);
             const cursor = this.ramune.getUserScores(player.id, ScoreType.Recent, Gamemode.Osu);
             for await (const score of cursor.iterate(10)) {
@@ -120,6 +152,7 @@ export class DailiesTracker extends EventEmitter implements Component {
                 lostScores.push(score);
             }
         });
+
         if (!lostScores.length) {
             this.logger.info("No scores to recover");
             return;
@@ -131,7 +164,8 @@ export class DailiesTracker extends EventEmitter implements Component {
     }
 
     private async refresh() {
-        const res = await this.dailiesStore.getPlayers().asyncMap(async player => await this.refreshPlayer(player.id, false));
+        const res = (await this.getPlayers().asyncMap(async player => await this.refreshPlayer(player.id, false)));
+
         const scores = res
             .flat(1)
             .sort((a, b) => a.id - b.id);
@@ -146,7 +180,7 @@ export class DailiesTracker extends EventEmitter implements Component {
         if (map.messageID !== undefined)
             return;
 
-        const channelID = this.dailiesStore.motdChannel;
+        const channelID = this.store.motdChannel;
         if (channelID === undefined)
             return;
 
@@ -166,7 +200,7 @@ export class DailiesTracker extends EventEmitter implements Component {
                     value: [
                         `Status: **${capitalise(beatmap.status)}**`,
                         `Mapper: **${beatmapset.creator}**`,
-                        `Required Mods: **${this.dailiesStore.getFriendlyMods(beatmap.id)}**`,
+                        `Required Mods: **${this.store.getFriendlyMods(beatmap.id)}**`,
                         `Max Combo: **${beatmap.maxCombo ?? "Unknown"}**`,
                         `Star Rating: **${beatmap.starRating}**`,
                         `CS/AR/OD/HP: **${beatmap.cs.toFixed(1)}**/**${beatmap.ar.toFixed(1)}**/**${beatmap.accuracy.toFixed(1)}**/**${beatmap.drain.toFixed(1)}**`
@@ -181,7 +215,7 @@ export class DailiesTracker extends EventEmitter implements Component {
         } });
 
         map.messageID = msg.id;
-        await this.dailiesStore.sync();
+        await this.store.sync();
     }
 
     public async refreshPlayer(player: number, shouldProcess: boolean = true) {
@@ -217,7 +251,7 @@ export class DailiesTracker extends EventEmitter implements Component {
             await writeFile(joinPaths(Blob.Environment.scorePath, `${score.id}.json`), JSON.stringify(score, undefined, 4));
 
         // Check 1: Is the map the current map?
-        const map = this.dailiesStore.currentMap;
+        const map = this.store.currentMap;
         if (map?.map.id !== score.beatmap!.id)
             return;
 
@@ -228,7 +262,7 @@ export class DailiesTracker extends EventEmitter implements Component {
             return;
 
         // Check 3: Does the score have the necessary mods?
-        if (!this.dailiesStore.testMods(map.map.id, score.mods))
+        if (!this.store.testMods(map.map.id, score.mods))
             return;
 
         scores.set(score.user_id, score);
@@ -256,7 +290,7 @@ export class DailiesTracker extends EventEmitter implements Component {
                 `Map #${map.index + 1}`,
                 map.requester ? `Requester = ${map.requester}` : undefined,
                 `Map ID = ${beatmap.id}`,
-                `Required Mods = ${this.dailiesStore.getFriendlyMods(beatmap.id)}`
+                `Required Mods = ${this.store.getFriendlyMods(beatmap.id)}`
             ].filter(i => i !== undefined).join("\n"),
             fields: [
                 {
@@ -291,11 +325,11 @@ export class DailiesTracker extends EventEmitter implements Component {
     }
 
     protected async updateMapScores() {
-        const map = this.dailiesStore.currentMap;
+        const map = this.store.currentMap;
         if (map?.messageID === undefined)
             return;
 
-        const channelID = this.dailiesStore.motdChannel;
+        const channelID = this.store.motdChannel;
         if (channelID === undefined)
             return;
 
@@ -306,8 +340,8 @@ export class DailiesTracker extends EventEmitter implements Component {
         if (!scores)
             return;
 
-        const desc = scores.map((score, osuID, index) =>
-            `${index + 1}. <@${this.dailiesStore.getDiscordFromOsu(osuID)!}> - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t>`
+        const desc = scores.map((score, osuPlayerID, index) =>
+            `${index + 1}. ${this.getPlayers().get(osuPlayerID)!.username} - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t>`
         );
 
         embed.fields![1].value = desc.join("\n");

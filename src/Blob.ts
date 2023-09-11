@@ -26,7 +26,9 @@ export const env = {
 
     configPath: process.env.BLOB_CONFIG_PATH ?? "./data.json",
     dailiesPath: process.env.BLOB_DAILIES_PATH ?? "./dailies.json",
-    scorePath: process.env.BLOB_SCORE_PATH ?? "./scores"
+    scorePath: process.env.BLOB_SCORE_PATH ?? "./scores",
+
+    countryMode: process.env.BLOB_COUNTRY_MODE === "1"
 } as const;
 
 const container = Container.scope(Symbol("DI/Main"), { strict: true });

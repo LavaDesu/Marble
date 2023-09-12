@@ -42,14 +42,16 @@ export class DevCommand extends BaseCommand {
             await this.slashInstance.syncCommandsPromise();
     }
 
-    @Subcommand("renew", "renew map")
+    @Subcommand("motd_reset", "reset motd")
     @Inject
-    async renewMap(ctx: CommandContext, @Use() store: DailiesStore) {
-        this.logger.debug("renew");
+    async motdReset(ctx: CommandContext, @Use() store: DailiesStore) {
+        this.logger.debug("motd_reset");
         store.resetCurrentMap();
+        // @ts-expect-error 2445
+        this.tracker.updateMapScores();
         // _@ts-expect-error 2445
         //await this.tracker.newMap(store.currentMap);
-        await ctx.send("renewed");
+        await ctx.send("reset");
     }
 
     @Subcommand("sync", "re-sync commands")

@@ -16,7 +16,7 @@ import { Blob } from "../Blob";
 import { Collection } from "../Utils/Collection";
 import { ConfigStore } from "./Stores/ConfigStore";
 import { DailiesStore, DailiesMap } from "./Stores/DailiesStore";
-import { asyncMap, capitalise } from "../Utils/Helpers";
+import { asyncMap, capitalise, sanitiseDiscord } from "../Utils/Helpers";
 import { Component, Load, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { WrappedRamune } from "./WrappedRamune";
@@ -351,7 +351,7 @@ export class DailiesTracker extends EventEmitter implements Component {
             return;
 
         const desc = scores.entriesArray().sort((a, b) => b[1].score - a[1].score).map(([osuPlayerID, score], index) =>
-            `${index + 1}. ${this.getPlayers().get(osuPlayerID)!.username} - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t>`
+            `${index + 1}. ${sanitiseDiscord(this.getPlayers().get(osuPlayerID)!.username)} - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t>`
         );
 
         embed.fields![1].value = desc.join("\n");

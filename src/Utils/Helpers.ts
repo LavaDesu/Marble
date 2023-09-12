@@ -7,10 +7,11 @@ export async function asyncForEach<T>(array: T[], cb: (value: T, index: number, 
 }
 export function sanitiseDiscord(message: string) {
     // TODO: can do some regex black magic here
-    // only sanitises _ since that's the only discord markdown character that's also
-    // allowed in osu usernames
     return message
-        .replaceAll("_", "\\_");
+        .replaceAll("_", "\\_")
+        .replaceAll("-", "\\-")
+        .replaceAll("*", "\\*")
+        .replaceAll(".", "\\.");
 }
 export function capitalise(str: string) {
     return str[0].toUpperCase() + str.slice(1);

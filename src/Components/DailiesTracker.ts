@@ -217,7 +217,7 @@ export class DailiesTracker extends EventEmitter implements Component {
         map.messageID = msg.id;
 
         const prevID = prev?.messageID;
-        if (prevID) {
+        if (prevID && prevID !== map.messageID) {
             const prevMsg = await this.discord.getMessage(channelID, prevID);
             const embed = prevMsg.embeds[0];
             embed.description = embed.description?.replace("Ending", "Ended");

@@ -350,7 +350,7 @@ export class DailiesTracker extends EventEmitter implements Component {
         if (!scores)
             return;
 
-        const desc = scores.map((score, osuPlayerID, index) =>
+        const desc = scores.entriesArray().sort((a, b) => b[1].score - a[1].score).map(([osuPlayerID, score], index) =>
             `${index + 1}. ${this.getPlayers().get(osuPlayerID)!.username} - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t>`
         );
 

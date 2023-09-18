@@ -9,6 +9,7 @@ import { Logger } from "../../Utils/Logger";
 import { WrappedRamune } from "../WrappedRamune";
 
 interface DailiesObject {
+    guild?: string;
     motdChannel?: string;
     feedChannel?: string;
     epoch: number;
@@ -32,6 +33,7 @@ export class DailiesStore extends EventEmitter {
     @Dependency private readonly ramune!: WrappedRamune;
 
     public epoch!: number;
+    public guild?: string;
     public motdChannel?: string;
     public feedChannel?: string;
     public currentMap?: DailiesMap;
@@ -74,10 +76,11 @@ export class DailiesStore extends EventEmitter {
         if (data === undefined)
             throw new Error("Error while parsing dailies.json");
 
-        if (data.feedChannel === undefined || data.motdChannel === undefined)
-            this.logger.warn("Make sure to populate channel IDs in dailies.json!");
+        if (data.feedChannel === undefined || data.motdChannel === undefined || data.guild === undefined)
+            this.logger.warn("Make sure to populate channel IDs and guild in dailies.json!");
 
         this.epoch = data.epoch;
+        this.guild = data.guild;
         this.motdChannel = data.motdChannel;
         this.feedChannel = data.feedChannel;
 
@@ -273,6 +276,7 @@ export class DailiesStore extends EventEmitter {
             motdChannel: this.motdChannel,
             feedChannel: this.feedChannel,
             epoch: this.epoch,
+            guild: this.guild,
             maps,
             players,
             scoreMap

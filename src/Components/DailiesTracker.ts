@@ -325,9 +325,11 @@ export class DailiesTracker extends EventEmitter implements Component {
             id: string;
             channel_id: string;
         }>({
-            discardOutput: true,
-            endpoint: `/api/webhooks/${this.webhook.id}/${this.webhook.token}?wait=true`,
+            endpoint: `/api/webhooks/${this.webhook.id}/${this.webhook.token}`,
             type: RequestType.POST,
+            query: {
+                wait: "true"
+            },
             body: {
                 username: score.user!.username,
                 avatar_url: `https://s.ppy.sh/a/${user.id}`,
@@ -336,10 +338,10 @@ export class DailiesTracker extends EventEmitter implements Component {
         });
         this.store.feedChannel ??= res.channel_id;
         this.store.getScoreMessageMap().set(score.id, res.id);
-        await this.updateMapScores();
+        await this.updateMapScores(score);
     }
 
-    protected async updateMapScores() {
+    protected async updateMapScores(newScore: Score) {
         const map = this.store.currentMap;
         if (map?.messageID === undefined)
             return;
@@ -355,16 +357,29 @@ export class DailiesTracker extends EventEmitter implements Component {
         if (!scores)
             return;
 
-        const feedChannel = this.store.feedChannel;
+        const guild = this.store.guild!;
+        const feedChannel = this.store.feedChannel!;
         const scoreMap = this.store.getScoreMessageMap();
-        const desc = scores.entriesArray().sort((a, b) => b[1].score - a[1].score).map(([osuPlayerID, score], index) =>
-            `${index + 1}. ${sanitiseDiscord(this.getPlayers().get(osuPlayerID)!.username)} - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t> [[info]](https://discord.com/channels/${feedChannel!}/${scoreMap.get(score.id)!})`
+        const sortedScores = scores.entriesArray().sort((a, b) => b[1].score - a[1].score);
+        const desc = sortedScores.map(([osuPlayerID, score], index) =>
+            `${index + 1}. ${sanitiseDiscord(this.getPlayers().get(osuPlayerID)!.username)} - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t> [[info]](https://discord.com/channels/${guild}/${feedChannel}/${scoreMap.get(score.id)!})`
         );
+
+        if (sortedScores.length >= 2 && sortedScores[0][1].id === newScore.id) {
+            const oldScore = sortedScores[1][1];
+            const newDiscordID = this.store.getDiscordFromOsu(newScore.user_id);
+            const newTop = newDiscordID ? `<@${newDiscordID}>` : newScore.user!.username;
+            const oldDiscordID = this.store.getDiscordFromOsu(oldScore.user_id);
+            const oldTop = oldDiscordID ? `<@${oldDiscordID}>` : oldScore.user!.username;
+            await this.discord.createMessage(feedChannel, {
+                content: `${oldTop} has been sniped by ${newTop}!`,
+                messageReference: { messageID: scoreMap.get(oldScore.id)! }
+            });
+        }
 
         embed.fields![1].value = desc.join("\n");
         await msg.edit({ embed });
     }
-
 
     public toggleRecord(): boolean {
         return this.recording = !this.recording;

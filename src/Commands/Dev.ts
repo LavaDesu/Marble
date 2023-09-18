@@ -48,7 +48,7 @@ export class DevCommand extends BaseCommand {
         this.logger.debug("motd_reset");
         store.resetCurrentMap();
         // @ts-expect-error 2445
-        this.tracker.updateMapScores();
+        this.tracker.updateMapScores({ id: 0 });
         // _@ts-expect-error 2445
         //await this.tracker.newMap(store.currentMap);
         await ctx.send("reset");

@@ -321,9 +321,12 @@ export class DailiesTracker extends EventEmitter implements Component {
             ],
             timestamp: new Date(score.created_at)
         };
-        await this.requestHandler.request({
+        const res = await this.requestHandler.request<Record<string, unknown> & {
+            id: string;
+            channel_id: string;
+        }>({
             discardOutput: true,
-            endpoint: `/api/webhooks/${this.webhook.id}/${this.webhook.token}`,
+            endpoint: `/api/webhooks/${this.webhook.id}/${this.webhook.token}?wait=true`,
             type: RequestType.POST,
             body: {
                 username: score.user!.username,
@@ -331,6 +334,8 @@ export class DailiesTracker extends EventEmitter implements Component {
                 embeds: [embed]
             }
         });
+        this.store.feedChannel ??= res.channel_id;
+        this.store.getScoreMessageMap().set(score.id, res.id);
         await this.updateMapScores();
     }
 
@@ -350,8 +355,10 @@ export class DailiesTracker extends EventEmitter implements Component {
         if (!scores)
             return;
 
+        const feedChannel = this.store.feedChannel;
+        const scoreMap = this.store.getScoreMessageMap();
         const desc = scores.entriesArray().sort((a, b) => b[1].score - a[1].score).map(([osuPlayerID, score], index) =>
-            `${index + 1}. ${sanitiseDiscord(this.getPlayers().get(osuPlayerID)!.username)} - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t>`
+            `${index + 1}. ${sanitiseDiscord(this.getPlayers().get(osuPlayerID)!.username)} - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t> [[info]](https://discord.com/channels/${feedChannel!}/${scoreMap.get(score.id)!})`
         );
 
         embed.fields![1].value = desc.join("\n");

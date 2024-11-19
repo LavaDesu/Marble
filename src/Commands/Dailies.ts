@@ -2,9 +2,11 @@ import { Mod } from "ramune";
 import { CommandContext, CommandOptionType } from "slash-create";
 import { Blob } from "../Blob";
 import { DailiesTracker } from "../Components/DailiesTracker";
+import { DiscordClient } from "../Components/Discord";
 import { DailiesStore, OperatorNode } from "../Components/Stores/DailiesStore";
 import { WrappedRamune } from "../Components/WrappedRamune";
 import { Component, Dependency, Inject, Load, Use } from "../Utils/DependencyInjection";
+import { sanitiseDiscord } from "../Utils/Helpers";
 import { Logger } from "../Utils/Logger";
 import { BaseCommand, Subcommand } from "./BaseCommand";
 
@@ -204,5 +206,52 @@ export class DailiesCommand extends BaseCommand {
             await ctx.editOriginal("map not found");
         else
             await ctx.editOriginal(`added: ${map.beatmapset.artist} - ${map.beatmapset.title} [${map.map.version}] ${oMods ?? ""}`);
+    }
+
+    @Subcommand("get_points", "Get points for a player", [
+        {
+            type: CommandOptionType.INTEGER,
+            name: "player_id",
+            description: "osu id of player",
+            required: true
+        }
+    ])
+    async getPoints(ctx: CommandContext) {
+        const playerID: number = ctx.options.get_points.player_id;
+        const player = this.store.getPlayers().get(playerID);
+        if (!player)
+            return await ctx.send(`Unknown player ${playerID}`);
+        const playerPoints = this.store.getPlayerPoints().get(playerID) ?? 0;
+        return await ctx.send(`${sanitiseDiscord(player.username)}'s points: ${playerPoints}`);
+    }
+
+    @Subcommand("refresh_country", "Refresh players in country", [
+        {
+            type: CommandOptionType.INTEGER,
+            name: "max_players",
+            description: "maximum number of active players to check, default 50",
+            min_value: 0,
+            required: false
+        }
+    ])
+    @Inject
+    async refreshCountry(ctx: CommandContext, @Use() tracker: DailiesTracker) {
+        const maxPlayers: number = ctx.options.refresh_country.max_players ?? 50;
+
+        await ctx.defer();
+        const [counter, ncounter] = await tracker.fetchCountryUsers(maxPlayers);
+
+        await ctx.editOriginal(`Fetched ${counter} players, ${ncounter} new`);
+    }
+
+    @Subcommand("setup_scoreboard", "Setup a scoreboard")
+    @Inject
+    async setupScoreboard(ctx: CommandContext, @Use() discord: DiscordClient, @Use() tracker: DailiesTracker) {
+        await ctx.defer(true);
+
+        const msg = await discord.createMessage(ctx.channelID, { embed: tracker.calcEmbed() });
+        this.store.scoreboardID = [ctx.channelID, msg.id];
+        await this.store.sync();
+        await ctx.send("done", { ephemeral: true });
     }
 }

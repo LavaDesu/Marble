@@ -14,8 +14,10 @@ interface DailiesObject {
     feedChannel?: string;
     epoch: number;
     players: [osuID: number, discordID?: string][];
+    playerPoints: [osuID: number, points: number][];
     maps: [id: number, mods?: OperatorNode, submittedBy?: string, messageID?: string][];
     scoreMap: [scoreID: number, messageID: string][];
+    scoreboardID?: string;
 }
 
 export interface StoreEvents<T> {
@@ -36,11 +38,13 @@ export class DailiesStore extends EventEmitter {
     public guild?: string;
     public motdChannel?: string;
     public feedChannel?: string;
+    public scoreboardID?: [channelID: string, messageID: string];
     public currentMap?: DailiesMap;
     public nextMapTimer?: NodeJS.Timeout;
     protected readonly maps: Collection<number, DailiesMap> = new Collection();
     protected readonly scoreMessageMap: Collection<number, string> = new Collection();
     protected readonly players: Collection<number, RamuneUser> = new Collection();
+    protected readonly playerPoints: Collection<number, number> = new Collection();
     protected readonly discordPlayers: Collection<string, RamuneUser> = new Collection();
     protected readonly osuToDiscord: Collection<number, string> = new Collection();
 
@@ -48,6 +52,7 @@ export class DailiesStore extends EventEmitter {
     public async load(): Promise<void> {
         this.maps.clear();
         this.players.clear();
+        this.playerPoints.clear();
         this.scoreMessageMap.clear();
         this.discordPlayers.clear();
         this.osuToDiscord.clear();
@@ -65,6 +70,7 @@ export class DailiesStore extends EventEmitter {
                 data = {
                     epoch: new Date().setUTCHours(0, 0, 0, 0),
                     players: [],
+                    playerPoints: [],
                     maps: [],
                     scoreMap: []
                 };
@@ -106,6 +112,7 @@ export class DailiesStore extends EventEmitter {
             this.scoreMessageMap.set(score, message);
         });
         data.maps.forEach(map => this.maps.placehold(map[0]));
+        data.playerPoints.forEach(([id, score]) => this.playerPoints.set(id, score));
         await asyncForEach(data.maps, async (rawMap, index) => {
             await this.addMap(rawMap[0], rawMap[1], rawMap[2], rawMap[3], index);
         });
@@ -244,6 +251,9 @@ export class DailiesStore extends EventEmitter {
     public getPlayers() {
         return this.players;
     }
+    public getPlayerPoints() {
+        return this.playerPoints;
+    }
     public getPlayersByDiscord() {
         return this.discordPlayers;
     }
@@ -271,6 +281,7 @@ export class DailiesStore extends EventEmitter {
 
             return ret;
         });
+        const playerPoints = this.playerPoints.entriesArray();
         const scoreMap = this.scoreMessageMap.entriesArray();
         await fs.writeFile(Blob.Environment.dailiesPath, JSON.stringify(<DailiesObject>{
             motdChannel: this.motdChannel,
@@ -279,7 +290,9 @@ export class DailiesStore extends EventEmitter {
             guild: this.guild,
             maps,
             players,
-            scoreMap
+            playerPoints,
+            scoreMap,
+            scoreboardID: this.scoreboardID
         }, undefined, 4));
     }
 }

@@ -21,6 +21,7 @@ import { Component, Load, Dependency } from "../Utils/DependencyInjection";
 import { Logger } from "../Utils/Logger";
 import { WrappedRamune } from "./WrappedRamune";
 import { DiscordClient } from "./Discord";
+import type { EmbedOptions } from "eris";
 
 export interface TrackerEvents<T> {
     (event: "newScore", listener: (score: Score) => void): T;
@@ -51,8 +52,6 @@ export class DailiesTracker extends EventEmitter implements Component {
         token: Blob.Environment.webhookToken
     };
 
-    protected countryUsers?: Collection<number, RamuneUser>;
-
     private recording: boolean;
 
     /**
@@ -82,28 +81,34 @@ export class DailiesTracker extends EventEmitter implements Component {
         this.trackTimer = setInterval(this.refresh.bind(this), 60e3);
         this.store.on("mapReset", this.newMap.bind(this));
 
-        if (Blob.Environment.countryMode)
-            await this.fetchCountryUsers();
-
         await this.replayScores();
         await this.updateScores();
     }
 
-    protected async fetchCountryUsers() {
+    async fetchCountryUsers(maxPlayers: number = 50): Promise<[counter: number, ncounter: number]> {
         this.logger.debug("Fetching country users");
-        this.countryUsers = new Collection();
 
+        const players = this.store.getPlayers();
+        let counter = 0;
+        let ncounter = 0;
         for await (const ranking of this.ramune.getRankings(Gamemode.Osu, RankingType.Performance, {
             country: "KH"
         }).iterate(50)) {
             if (!ranking.user || !ranking.user.is_active)
                 continue;
 
-            this.countryUsers.set(ranking.user!.id, new RamuneUser(this.ramune, ranking.user!, true));
-            if (this.countryUsers.size >= 50)
+            counter += 1;
+            if (counter > maxPlayers)
                 break;
+
+            if (players.has(ranking.user!.id))
+                continue;
+            ncounter += 1;
+            players.set(ranking.user!.id, new RamuneUser(this.ramune, ranking.user!, true));
         }
-        this.logger.debug(`Fetched ${this.countryUsers.size} country users`);
+        await this.store.sync();
+        this.logger.debug(`Fetched ${ncounter} country users`);
+        return [counter, ncounter];
     }
 
     public getScore(map: number, player: number) {
@@ -117,10 +122,12 @@ export class DailiesTracker extends EventEmitter implements Component {
     }
 
     public async replayScores() {
+        this.logger.debug("Starting scores replay");
         const scorePaths = await readdir(Blob.Environment.scorePath);
         const scores = await asyncMap(scorePaths, async scoreName =>
             JSON.parse(await readFile(joinPaths(Blob.Environment.scorePath, scoreName), "utf8")) as Score
         );
+        this.logger.debug(`Replaying ${scores.length} scores`);
 
         /* we're not running this in parallel since we want later scores
          * to override earlier ones, and this could introduce nasty race
@@ -129,14 +136,12 @@ export class DailiesTracker extends EventEmitter implements Component {
         for (const score of scores)
             await this.process(score, false, false);
 
+        this.logger.debug("Scores replayed");
         return;
     }
 
     public getPlayers(): Collection<number, RamuneUser> {
-        if (this.countryUsers)
-            return this.countryUsers;
-        else
-            return this.store.getPlayers();
+        return this.store.getPlayers();
     }
 
     private async updateScores() {
@@ -223,6 +228,31 @@ export class DailiesTracker extends EventEmitter implements Component {
             embed.description = embed.description?.replace("Ending", "Ended");
             embed.color = 0xFF0000;
             await prevMsg.edit({ embed });
+
+            const prevScores = this.getMapScores(prev.map.id);
+            if (!prevScores)
+                this.logger.error(`Missing map ${prev.map.id} during point calc`);
+            else {
+                const points = this.store.getPlayerPoints();
+
+                const scores = prevScores.valuesAsArray();
+                scores.sort((a, b) => b.score - a.score);
+
+                let isFirst = true;
+                for (const score of scores) {
+                    let point = points.getOrSet(score.user_id, 0);
+                    point += 1;
+                    if (isFirst) {
+                        isFirst = false;
+                        point += 1;
+                    }
+                    points.set(score.user_id, point);
+                }
+            }
+
+            const scoreboard = this.store.scoreboardID;
+            if (scoreboard)
+                await this.discord.editMessage(scoreboard[0], scoreboard[1], { embed: this.calcEmbed() });
         }
 
         await this.store.sync();
@@ -383,5 +413,36 @@ export class DailiesTracker extends EventEmitter implements Component {
 
     public toggleRecord(): boolean {
         return this.recording = !this.recording;
+    }
+
+    public calcEmbed(): EmbedOptions {
+        const pointColl = this.store.getPlayerPoints();
+        const playersColl = this.store.getPlayers();
+        const players: string[] = [];
+        const points: string[] = [];
+        pointColl.entriesArray().sort((a, b) => b[1] - a[1]).forEach(([playerID, playerPoints]) => {
+            const player = playersColl.get(playerID)?.username ?? "Unknown";
+            players.push(sanitiseDiscord(player));
+            points.push(`${playerPoints} points`);
+        });
+        return {
+            title: "Map of the Day - Scoreboard",
+            fields: [
+                {
+                    name: "Player",
+                    value: players.join("\n"),
+                    inline: true
+                },
+                {
+                    name: "Score",
+                    value: points.join("\n"),
+                    inline: true
+                }
+            ]
+        };
+        // description: this.store.getPlayerPoints().map((points, playerID, idx) => {
+        //     const player = this.store.getPlayers().get(playerID);
+        //     return `#${idx + 1} - ${sanitiseDiscord(player!.username)} - ${} points`;
+        // }).join("\n")
     }
 }

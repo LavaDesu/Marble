@@ -42,6 +42,26 @@ export class DevCommand extends BaseCommand {
             await this.slashInstance.syncCommandsPromise();
     }
 
+    @Subcommand("sim_skip", "simulate motd skip")
+    @Inject
+    async simSkip(ctx: CommandContext, @Use() store: DailiesStore) {
+        const curr = store.currentMap;
+        if (!curr)
+            return await ctx.send("no map");
+        const maps = store.getMaps();
+        const keys = maps.keysAsArray();
+        const i = keys.indexOf(curr.map.id);
+        if (keys.length <= i)
+            return await ctx.send("tailing");
+        const nextkey = keys[i + 1];
+        const next = maps.get(nextkey);
+
+        // @ts-expect-error 2445
+        await this.tracker.newMap(next, curr);
+        return await ctx.send("skipped");
+
+    }
+
     @Subcommand("motd_reset", "reset motd")
     @Inject
     async motdReset(ctx: CommandContext, @Use() store: DailiesStore) {

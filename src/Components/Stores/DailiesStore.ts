@@ -17,7 +17,7 @@ interface DailiesObject {
     playerPoints: [osuID: number, points: number][];
     maps: [id: number, mods?: OperatorNode, submittedBy?: string, messageID?: string][];
     scoreMap: [scoreID: number, messageID: string][];
-    scoreboardID?: string;
+    scoreboardID?: [channelID: string, messageID: string];
 }
 
 export interface StoreEvents<T> {
@@ -89,6 +89,7 @@ export class DailiesStore extends EventEmitter {
         this.guild = data.guild;
         this.motdChannel = data.motdChannel;
         this.feedChannel = data.feedChannel;
+        this.scoreboardID = data.scoreboardID;
 
         await asyncForEach(data.players, async player => {
             this.players.placehold(player[0]);

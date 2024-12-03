@@ -387,12 +387,13 @@ export class DailiesTracker extends EventEmitter implements Component {
         if (!scores)
             return;
 
-        const guild = this.store.guild!;
+        //const guild = this.store.guild!;
         const feedChannel = this.store.feedChannel!;
         const scoreMap = this.store.getScoreMessageMap();
         const sortedScores = scores.entriesArray().sort((a, b) => b[1].score - a[1].score);
         const desc = sortedScores.map(([osuPlayerID, score], index) =>
-            `${index + 1}. ${sanitiseDiscord(this.getPlayers().get(osuPlayerID)!.username)} - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t> [[info]](https://discord.com/channels/${guild}/${feedChannel}/${scoreMap.get(score.id)!})`
+            //`${index + 1}. ${sanitiseDiscord(this.getPlayers().get(osuPlayerID)!.username)} - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t> [[info]](https://discord.com/channels/${guild}/${feedChannel}/${scoreMap.get(score.id)!})`
+            `${index + 1}. ${sanitiseDiscord(this.getPlayers().get(osuPlayerID)!.username)} - **${score.score.toLocaleString()}${score.mods.length ? " +" + score.mods.join("") : ""}** at <t:${Math.ceil(new Date(score.created_at).getTime() / 1000)}:t>`
         );
 
         if (sortedScores.length >= 2 && sortedScores[0][1].id === newScore.id) {
@@ -407,7 +408,17 @@ export class DailiesTracker extends EventEmitter implements Component {
             });
         }
 
-        embed.fields![1].value = desc.join("\n");
+        const splits: string[][] = [];
+        desc.forEach((line, i) => {
+            const fieldIdx = Math.floor(i / 10);
+            splits[fieldIdx] ??= [];
+            splits[fieldIdx].push(line);
+        });
+        splits.forEach((lineGroup, i) => {
+            const name = i === 0 ? "Scores" : "\u200b";
+            embed.fields![i + 1] = { name, value: lineGroup.join("\n") };
+        });
+
         await msg.edit({ embed });
     }
 

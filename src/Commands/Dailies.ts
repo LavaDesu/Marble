@@ -196,7 +196,7 @@ export class DailiesCommand extends BaseCommand {
                     await ctx.send("invalid mods detected");
                     return;
                 }
-                mods = oMods.match(/.{1, 2}/g) as Mod[];
+                mods = oMods.match(/.{1,2}/g) as Mod[];
             }
 
         await ctx.defer();

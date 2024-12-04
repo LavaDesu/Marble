@@ -2,6 +2,7 @@ import { readdir, readFile, writeFile } from "fs/promises";
 import { join as joinPaths } from "path";
 import { EventEmitter } from "events";
 import {
+    BeatmapsetOnlineStatus,
     Gamemode,
     RankingType,
     RequestHandler,
@@ -288,7 +289,10 @@ export class DailiesTracker extends EventEmitter implements Component {
 
         this.allScores.getOrSet(score.user_id, []).push(score.id);
         if (this.recording && shouldStore)
-            await writeFile(joinPaths(Blob.Environment.scorePath, `${score.id}.json`), JSON.stringify(score, undefined, 4));
+            if (score.id === 0 || score.beatmap!.status === BeatmapsetOnlineStatus.Graveyard)
+                await writeFile(joinPaths(Blob.Environment.scorePath, `_u${Date.parse(score.created_at)}_${score.user_id}.json`), JSON.stringify(score, undefined, 4));
+            else
+                await writeFile(joinPaths(Blob.Environment.scorePath, `${score.id}.json`), JSON.stringify(score, undefined, 4));
 
         // Check 1: Is the map the current map?
         const map = this.store.currentMap;

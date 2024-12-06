@@ -2,7 +2,6 @@ import { readdir, readFile, writeFile } from "fs/promises";
 import { join as joinPaths } from "path";
 import { EventEmitter } from "events";
 import {
-    BeatmapsetOnlineStatus,
     Gamemode,
     RankingType,
     RequestHandler,
@@ -152,7 +151,7 @@ export class DailiesTracker extends EventEmitter implements Component {
             const plays = this.allScores.getOrSet(player.id, []);
             const cursor = this.ramune.getUserScores(player.id, ScoreType.Recent, Gamemode.Osu);
             for await (const score of cursor.iterate(10)) {
-                if (plays.includes(score.id))
+                if (plays.includes(score.id) && score.id !== 0)
                     break;
 
                 lostScores.push(score);
@@ -266,7 +265,7 @@ export class DailiesTracker extends EventEmitter implements Component {
         try {
             const cursor = this.ramune.getUserScores(player.toString(), ScoreType.Recent, Gamemode.Osu);
             for await (const score of cursor.iterate(5)) {
-                if (playerScores.includes(score.id))
+                if (playerScores.includes(score.id) && score.id !== 0)
                     break;
 
                 scores.push(score);
@@ -276,7 +275,7 @@ export class DailiesTracker extends EventEmitter implements Component {
             return [];
         }
 
-        playerScores.push(...scores.map(i => i.id));
+        playerScores.push(...scores.map(score => this.fixupID(score)));
 
         if (shouldProcess)
             await asyncMap(scores, async score => await this.process(score));
@@ -284,15 +283,21 @@ export class DailiesTracker extends EventEmitter implements Component {
         return scores;
     }
 
+    protected fixupID(score: Score) {
+        if (score.id === 0)
+            return Date.parse(score.created_at) * 100 + score.user_id % 100000;
+        else
+            return score.id;
+    }
+
     public async process(score: Score, shouldPost: boolean = true, shouldStore: boolean = true) {
         this.emit("newScore", score);
 
+        score.id = this.fixupID(score);
+
         this.allScores.getOrSet(score.user_id, []).push(score.id);
         if (this.recording && shouldStore)
-            if (score.id === 0 || score.beatmap!.status === BeatmapsetOnlineStatus.Graveyard)
-                await writeFile(joinPaths(Blob.Environment.scorePath, `_u${Date.parse(score.created_at)}_${score.user_id}.json`), JSON.stringify(score, undefined, 4));
-            else
-                await writeFile(joinPaths(Blob.Environment.scorePath, `${score.id}.json`), JSON.stringify(score, undefined, 4));
+            await writeFile(joinPaths(Blob.Environment.scorePath, `${score.id}.json`), JSON.stringify(score, undefined, 4));
 
         // Check 1: Is the map the current map?
         const map = this.store.currentMap;
